@@ -16,6 +16,49 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
+// Add scrollbar styles
+const scrollbarStyles = `
+  /* Light theme scrollbars */
+  .light-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .light-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 5px;
+  }
+  
+  .light-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+  }
+  
+  .light-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Dark theme scrollbars - what you already have */
+  .dark-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .dark-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+  }
+  
+  .dark-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+  }
+  
+  .dark-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+`;
+
 // ------------------------------------------------------------
 // Clean Schedule Planner (matches sketch)
 // - Top inline tabs beside page title
@@ -655,6 +698,7 @@ export default function SchedulePlanner() {
 
   return (
     <div className="min-h-screen w-full" style={bgStyle}>
+      <style>{scrollbarStyles}</style>
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
         {/* Top header: title + tabs on the left, school year chip on the right */}
         <div className="flex items-center justify-between gap-4">
@@ -730,7 +774,7 @@ export default function SchedulePlanner() {
         </div>
 
         {/* Only one school year is shown; only first two terms are visible */}
-        <div className="space-y-16">
+        <div className="space-y-6">
           {years.map((year) => (
             <div 
               key={year.id} 
@@ -738,12 +782,16 @@ export default function SchedulePlanner() {
               ref={(el) => yearRefs.current[year.id] = el}
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">{year.label}</h2>
+                <h2 className="text-2xl font-semibold tracking-tight">{year.label}</h2>
               </div>
 
               <div className="flex"> {/* Flex container for canvas + button */}
                 {/* Scrollable terms container */}
-                <div className="overflow-x-auto flex-1">
+                  <div className={`overflow-x-auto flex-1 ${
+                    theme.mode === "dark" || (theme.mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+                      ? "dark-scrollbar" 
+                      : "light-scrollbar"
+                  }`}>
                   <div className="flex gap-6 items-start min-w-max">
                     {year.terms.map((_, idx) => (
                       <div key={idx} className="min-w-[950px]">
@@ -776,13 +824,11 @@ export default function SchedulePlanner() {
             </div>
           ))}
           
-          <div className="mt-8 pb-8">
+          <div className="mt-4 pb-8">
             <Button
-              className="w-full h-28 rounded-2xl border border-black/10 dark:border-white/10 
-                        bg-gradient-to-r from-white/60 to-white/70 dark:from-neutral-900/50 dark:to-neutral-800/60 
-                        hover:from-white/70 hover:to-white/80 dark:hover:from-neutral-800/60 dark:hover:to-neutral-700/70 
-                        shadow-md hover:shadow-lg transition-all text-muted-foreground font-semibold"
-              onClick={() => {
+              className="w-full h-16 rounded-2xl border border-black/10 dark:border-white/10 
+                        bg-white/70 dark:bg-neutral-900/60 hover:bg-white/80 
+                        dark:hover:bg-neutral-800/60 transition text-muted-foreground font-semibold"              onClick={() => {
                 const newLabel = getNextYearLabel();
                 console.log("Adding new year:", newLabel);
                 addYear(newLabel);

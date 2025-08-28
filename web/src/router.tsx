@@ -10,17 +10,18 @@ import GPACalculator from '@/pages/GPACalculator'
 import Scholarships from '@/pages/Scholarships'
 import Textbooks from '@/pages/Textbooks'
 import Settings from '@/pages/Settings'
+import AppLayout from '@/components/AppLayout'
 
 
 export const router = createBrowserRouter([
-{ path: '/', element: <Dashboard/> },
-{ path: '/planner', element: <AcademicPlanner/> },
-{ path: '/tasks', element: <Tasks/> },
-{ path: '/schedule', element: <SchedulePlanner/> },
-{ path: '/course-planner', element: <CoursePlanner/> },
-{ path: '/grade-calculator', element: <GradeCalculator/> },
-{ path: '/gpa-calculator', element: <GPACalculator/> },
-{ path: '/scholarships', element: <Scholarships/> },
-{ path: '/textbooks', element: <Textbooks/> },
-{ path: '/settings', element: <Settings/> },
-])
+{ path: '/', element: <AppLayout><Dashboard/></AppLayout> },
+{ path: '/planner', element: <AppLayout><AcademicPlanner/></AppLayout> },
+{ path: '/tasks', element: <AppLayout><Tasks/></AppLayout> },
+{ path: '/schedule', element: <AppLayout><SchedulePlanner/></AppLayout> },
+{ path: '/course-planner', element: <AppLayout><CoursePlanner/></AppLayout> },
+{ path: '/grade-calculator', element: <AppLayout><GradeCalculator/></AppLayout> },
+{ path: '/gpa-calculator', element: <AppLayout><GPACalculator/></AppLayout> },
+{ path: '/scholarships', element: <AppLayout><Scholarships/></AppLayout> },
+{ path: '/textbooks', element: <AppLayout><Textbooks/></AppLayout> },
+{ path: '/settings', element: <AppLayout><Settings/></AppLayout> },
+]) 

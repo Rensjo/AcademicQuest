@@ -371,7 +371,15 @@ export default function AcademicQuestDashboard() {
                   Your bright, gamified hub for planning classes, tracking tasks, scheduling study time, calculating grades & GPA, scholarships, textbooks, and more.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Button className="rounded-2xl">Open Planner</Button>
+                  {navigate ? (
+                    <Button className="rounded-2xl" onClick={() => navigate!("/planner")}>
+                      Open Planner
+                    </Button>
+                  ) : (
+                    <a href="/planner">
+                      <Button className="rounded-2xl">Open Planner</Button>
+                    </a>
+                  )}
                   <Button variant="outline" className="rounded-2xl">Quick Add Task</Button>
                   <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/80 dark:bg-neutral-900/60 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0">Customize Widgets</Button>
                 </div>
@@ -703,7 +711,18 @@ export default function AcademicQuestDashboard() {
           <div className="mt-10">
             <h2 className="text-xl font-semibold tracking-tight mb-4">Everything in one place</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              <Feature icon={School} title="Academic Planner" desc="Program map by SY & term, courses, sections, units, GPA." cta="Open Academic Planner" colors={COLORS} />
+              <Feature
+                icon={School}
+                title="Academic Planner"
+                desc="Program map by SY & term, courses, sections, units, GPA."
+                cta="Open Academic Planner"
+                colors={COLORS}
+                onClick={
+                  navigate
+                    ? () => navigate("/planner")
+                    : () => (window.location.href = "/planner")
+                }
+              />
               <Feature icon={ClipboardList} title="Task Tracker" desc="Assignments by course with status, due date/time, days‑left, grade + completion chart." cta="Track Tasks" colors={COLORS} />
               <Feature 
                 icon={CalendarDays} 
