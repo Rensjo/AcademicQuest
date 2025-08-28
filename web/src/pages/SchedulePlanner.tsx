@@ -2,7 +2,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, CalendarDays } from "lucide-react";
-import { useSchedule, DayIndex, Slot } from "@/store/scheduleStore";
+import { useSchedule, DayIndex, Slot, Term } from "@/store/scheduleStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTheme, PALETTES } from "@/store/theme";
@@ -315,34 +315,28 @@ function TermRangeButton({
 }
 
 // ---------- One Term Column ----------
-function TermColumn({ yearId, termIndex }: { yearId: string; termIndex: number }) {
-  // read minimal slices to avoid re-renders
-  const years = useSchedule((s) => s.years);
+function TermColumnBody({ yearId, term }: { yearId: string; term: Term }) {
+  // store actions
   const addSlot = useSchedule((s) => s.addSlot);
   const updateSlot = useSchedule((s) => s.updateSlot);
   const removeSlot = useSchedule((s) => s.removeSlot);
   const setTermDates = useSchedule((s) => s.setTermDates);
 
-  const year = years.find((y) => y.id === yearId);
-  const term = year?.terms?.[termIndex];
-  if (!year || !term) return null;
-
-  // Check if term dates are set
   const hasDateRange = Boolean(term.startDate && term.endDate);
 
   // dialog state for block editor
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState<Draft | null>(null);
 
-  // New state for term date dialog
+  // term date dialog
   const [dateDialogOpen, setDateDialogOpen] = React.useState(false);
 
   const daysBlocks = React.useMemo(() => {
     const byDay: Record<DayIndex, Slot[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
     for (const s of term.slots) byDay[s.day].push(s as Slot);
-    (Object.keys(byDay) as unknown as DayIndex[]).forEach((d: any) =>
-      byDay[d].sort((a, b) => hmToIndex(a.start) - hmToIndex(b.start))
-    );
+    ([-1,0,1,2,3,4,5,6].slice(1) as DayIndex[]).forEach((di) => {
+      byDay[di].sort((a, b) => hmToIndex(a.start) - hmToIndex(b.start));
+    });
     return byDay;
   }, [term.slots]);
 
@@ -401,14 +395,28 @@ function TermColumn({ yearId, termIndex }: { yearId: string; termIndex: number }
             end={term.endDate}
             onSave={(s, e) => setTermDates(yearId, term.id, s, e)}
           />
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => hasDateRange ? setOpen(true) : setDateDialogOpen(true)}
-            title={!hasDateRange ? "Please set term dates first" : "Add new block"}
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add Block
-          </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => {
+                if (!hasDateRange) {
+                  setDateDialogOpen(true);
+                  return;
+                }
+                // Default: Sunday, 07:00–08:00, first color
+                setDraft({
+                  title: "",
+                  day: 0,
+                  start: indexToHM(0),
+                  end: indexToHM(2), // 1 hour
+                  color: COLORS[0],
+                });
+                setOpen(true);
+              }}
+              title={!hasDateRange ? "Please set term dates first" : "Add new block"}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Block
+            </Button>
         </div>
       </div>
 
@@ -612,6 +620,14 @@ function TermColumn({ yearId, termIndex }: { yearId: string; termIndex: number }
   );
 }
 
+function TermColumn({ yearId, termIndex }: { yearId: string; termIndex: number }) {
+  const years = useSchedule((s) => s.years);
+  const year = years.find((y) => y.id === yearId);
+  const term = year?.terms?.[termIndex];
+  if (!year || !term) return null;
+  return <TermColumnBody yearId={yearId} term={term} />;
+}
+
 // ---------- Inline top tabs (beside title) ----------
 function TopTabsInline() {
   const navigate = useNavigate();
@@ -644,7 +660,6 @@ function TopTabsInline() {
 
 // ---------- Main Page ----------
 export default function SchedulePlanner() {
-  const navigate = useNavigate();
   const years = useSchedule((s) => s.years);
   const selectedYearId = useSchedule((s) => s.selectedYearId);
   const yearRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
@@ -674,7 +689,13 @@ export default function SchedulePlanner() {
       : "linear-gradient(135deg, #ffffff 0%, #f8fbff 65%)";
     const tintA = `radial-gradient(circle at 10% 0%, ${THEME_COLORS[0]}${hex} 0%, transparent 40%)`;
     const tintB = `radial-gradient(circle at 90% 10%, ${THEME_COLORS[3]}${hex} 0%, transparent 45%)`;
-    return { backgroundImage: `${tintA}, ${tintB}, ${base}` } as React.CSSProperties;
+    const tintC = `radial-gradient(circle at 50% 120%, ${THEME_COLORS[2]}${hex} 0%, transparent 55%)`;
+    return {
+      backgroundImage: `${tintA}, ${tintB}, ${tintC}, ${base}`,
+      backgroundRepeat: "no-repeat, no-repeat, no-repeat, no-repeat",
+      backgroundAttachment: "fixed, fixed, scroll, fixed",
+      backgroundPosition: "10% 0%, 90% 10%, 50% 100%, 0 0",
+    } as React.CSSProperties;
   }, [accentLocal, theme.mode, THEME_COLORS]);
 
     // Calculate next school year label based on existing years
@@ -779,7 +800,9 @@ export default function SchedulePlanner() {
             <div 
               key={year.id} 
               className="space-y-4"
-              ref={(el) => yearRefs.current[year.id] = el}
+              ref={(el) => {
+                yearRefs.current[year.id] = el;
+              }}
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold tracking-tight">{year.label}</h2>
@@ -811,7 +834,7 @@ export default function SchedulePlanner() {
                     style={{ 
                       height: GRID_PX + 56 - 32, // Canvas height minus padding (header=24px + weekday row=32px - section padding)
                     }}
-                    onClick={() => setTermsCount(year.id, Math.min(4, year.terms.length + 1))}
+                    onClick={() => setTermsCount(year.id, Math.min(4, (year.terms.length + 1) as 2 | 3 | 4) as 2 | 3 | 4)}
                     title={year.terms.length >= 4 ? "Max 4 terms" : "Add new term"}
                     disabled={year.terms.length >= 4}
                   >

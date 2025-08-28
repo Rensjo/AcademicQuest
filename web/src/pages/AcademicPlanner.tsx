@@ -65,7 +65,13 @@ function useThemedGradient() {
       : "linear-gradient(135deg, #ffffff 0%, #f8fbff 65%)";
     const tintA = `radial-gradient(circle at 8% 0%, ${THEME_COLORS[0]}${hex} 0%, transparent 40%)`;
     const tintB = `radial-gradient(circle at 92% 12%, ${THEME_COLORS[3]}${hex} 0%, transparent 45%)`;
-    return { backgroundImage: `${tintA}, ${tintB}, ${base}` } as React.CSSProperties;
+    const tintC = `radial-gradient(circle at 50% 120%, ${THEME_COLORS[2]}${hex} 0%, transparent 55%)`;
+    return {
+      backgroundImage: `${tintA}, ${tintB}, ${tintC}, ${base}`,
+      backgroundRepeat: "no-repeat, no-repeat, no-repeat, no-repeat",
+      backgroundAttachment: "fixed, fixed, scroll, fixed",
+      backgroundPosition: "8% 0%, 92% 12%, 50% 100%, 0 0",
+    } as React.CSSProperties;
   }, [accentLocal, theme.mode, THEME_COLORS]);
 }
 

@@ -328,8 +328,14 @@ export default function AcademicQuestDashboard() {
     // keep palette tints on top in both modes
     const tintA = `radial-gradient(circle at 10% 0%, ${COLORS[0]}${hex} 0%, transparent 40%)`;
     const tintB = `radial-gradient(circle at 90% 10%, ${COLORS[3]}${hex} 0%, transparent 45%)`;
+    const tintC = `radial-gradient(circle at 50% 120%, ${COLORS[2]}${hex} 0%, transparent 55%)`;
 
-    return { backgroundImage: `${tintA}, ${tintB}, ${baseLinear}` } as React.CSSProperties;
+    return {
+      backgroundImage: `${tintA}, ${tintB}, ${tintC}, ${baseLinear}`,
+      backgroundRepeat: 'no-repeat, no-repeat, no-repeat, no-repeat',
+      backgroundAttachment: 'fixed, fixed, scroll, fixed',
+      backgroundPosition: '10% 0%, 90% 10%, 50% 100%, 0 0',
+    } as React.CSSProperties;
   }, [accentLocal, theme.mode, COLORS]); // Use accentLocal instead of theme.accent
 
 
