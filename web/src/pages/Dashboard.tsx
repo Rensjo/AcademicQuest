@@ -4,7 +4,8 @@ import { useAQ } from '@/store/aqStore'
 import { useSchedule } from "@/store/scheduleStore";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { motion, AnimatePresence, animate } from "framer-motion";
+// import { DashboardQuickTasks } from "@/pages/Tasks";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon, Monitor } from "lucide-react";
 import {
   Sparkles,
@@ -19,15 +20,12 @@ import {
   School,
   Trophy,
   Star,
-  Wand2,
-  Wand2Icon,
-  AlarmClock,
+  
   Wallet,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
+// removed unused Switch/Input
 import { Label } from "@/components/ui/label";
 import {
   PieChart,
@@ -40,7 +38,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
+  
   BarChart,
   Bar,
 } from "recharts";
@@ -95,11 +93,7 @@ const gradeDistribution = [
   { range: "<70", count: 0 },
 ];
 
-const COLOR_SETS: Record<string, string[]> = {
-  sky: ["#0ea5e9", "#22c55e", "#f59e0b", "#a78bfa", "#ef4444"],
-  violet: ["#8b5cf6", "#22c55e", "#06b6d4", "#f97316", "#ef4444"],
-  emerald: ["#10b981", "#60a5fa", "#f59e0b", "#a78bfa", "#ef4444"],
-};
+//
 
 // dynamic palette from theme store
 const useColors = () => {
@@ -204,7 +198,8 @@ const GlowIconButton = ({
 };
 
 
-const Stat = ({ label, value, icon: Icon, hint, colors }: { label: string; value: React.ReactNode; icon: any; hint?: string; colors: string[] }) => (
+type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const Stat = ({ label, value, icon: Icon, hint, colors }: { label: string; value: React.ReactNode; icon: IconType; hint?: string; colors: string[] }) => (
   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
     <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
       <CardContent className="relative p-4 sm:p-5">
@@ -223,7 +218,7 @@ const Stat = ({ label, value, icon: Icon, hint, colors }: { label: string; value
   </motion.div>
 );
 
-const Feature = ({ icon: Icon, title, desc, cta, colors, onClick }: any) => (
+const Feature = ({ icon: Icon, title, desc, cta, colors, onClick }: { icon: IconType; title: string; desc: string; cta?: string; colors: string[]; onClick?: () => void }) => (
   <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
     <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-shadow rounded-3xl bg-white/80 dark:bg-neutral-900/60">
       <CardContent className="p-6">
@@ -242,35 +237,23 @@ const Feature = ({ icon: Icon, title, desc, cta, colors, onClick }: any) => (
 
 export default function AcademicQuestDashboard() {
   // User customizations (persisted to localStorage)
-  const [primary, setPrimary] = useState<keyof typeof COLOR_SETS>("sky");
-  const [accentIntensity, setAccentIntensity] = useState(60); // 0–100
   const [compact, setCompact] = useState(false);
-  const [font, setFont] = useState("Inter");
   const [showBadges, setShowBadges] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("aq:settings");
     if (saved) {
       try {
-        const { primary, accentIntensity, compact, font } = JSON.parse(saved);
-        if (primary) setPrimary(primary);
-        if (typeof accentIntensity === "number") setAccentIntensity(accentIntensity);
+        const { compact } = JSON.parse(saved);
         if (typeof compact === "boolean") setCompact(compact);
-        if (font) setFont(font);
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
   }, []);
 
-  // router nav (only if you use React Router)
-  let navigate: ((path: string) => void) | undefined;
-  try {
-    // this will throw if Router isn't mounted; that's okay—we fallback to <a> links
-    // @ts-ignore
-    navigate = useNavigate();
-    // make it a simple function signature
-    const go = navigate;
-    navigate = (path) => go(path);
-  } catch {}
+  // router nav (call hook unconditionally and guard usage)
+  const navigate = useNavigate();
 
   // Store-driven theme hooks
   const theme = useTheme();
@@ -283,7 +266,7 @@ export default function AcademicQuestDashboard() {
 
 
   const [localCompact, setLocalCompact] = useState(compact);
-  useEffect(() => { if (localCompact !== compact) setLocalCompact(compact); }, [compact]);
+  useEffect(() => { if (localCompact !== compact) setLocalCompact(compact); }, [compact, localCompact]);
 
   // And add another effect to commit changes:
   useEffect(() => {
@@ -299,7 +282,7 @@ export default function AcademicQuestDashboard() {
   // keep in sync if theme.accent changes elsewhere
   useEffect(() => {
     if (accentLocal !== theme.accent) setAccentLocal(theme.accent);
-  }, [theme.accent]); // ok
+  }, [theme.accent, accentLocal]);
 
 
   // apply global font & dark/class mode
@@ -374,7 +357,7 @@ export default function AcademicQuestDashboard() {
                   Academic Quest — Dashboard
                 </h1>
                 <p className="mt-2 text-sm md:text-base text-neutral-600 max-w-2xl">
-                  Your bright, gamified hub for planning classes, tracking tasks, scheduling study time, calculating grades & GPA, scholarships, textbooks, and more.
+                  Your all‑in‑one academic tracker to boost productivity.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {navigate ? (
@@ -436,9 +419,9 @@ export default function AcademicQuestDashboard() {
                           <div className="space-y-2">
                           <Label className="text-xs text-neutral-600">Primary</Label>
                           <div className="flex items-center gap-2">
-                              <Chip color="#0ea5e9" active={theme.palette === "sky"} onClick={() => { setPrimary("sky"); theme.setPalette("sky"); }} label="Sky" />
-                              <Chip color="#8b5cf6" active={theme.palette === "violet"} onClick={() => { setPrimary("violet"); theme.setPalette("violet"); }} label="Violet" />
-                              <Chip color="#10b981" active={theme.palette === "emerald"} onClick={() => { setPrimary("emerald"); theme.setPalette("emerald"); }} label="Emerald" />
+                              <Chip color="#0ea5e9" active={theme.palette === "sky"} onClick={() => theme.setPalette("sky")} label="Sky" />
+                              <Chip color="#8b5cf6" active={theme.palette === "violet"} onClick={() => theme.setPalette("violet")} label="Violet" />
+                              <Chip color="#10b981" active={theme.palette === "emerald"} onClick={() => theme.setPalette("emerald")} label="Emerald" />
                           </div>
                           </div>
                            <div className="flex-1">
@@ -472,7 +455,7 @@ export default function AcademicQuestDashboard() {
                                     key={key}
                                     type="button"
                                     variant="ghost"
-                                    onClick={() => theme.setMode(key as any)}
+                                    onClick={() => theme.setMode(key as "light" | "dark" | "system")}
                                     className={`h-9 px-3 gap-2 rounded-2xl bg-transparent 
                                       ${active 
                                         ? "bg-black/5 dark:bg-white/10 text-foreground" 
@@ -657,39 +640,7 @@ export default function AcademicQuestDashboard() {
             </div>
 
             <div className="space-y-6">
-              <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold">Quick Tasks</h3>
-                    <Button variant="outline" className="rounded-2xl">Add</Button>
-                  </div>
-                  <ul className="space-y-3">
-                    {mock.quickTasks.map((t, i) => (
-                      <motion.li
-                        key={i}
-                        initial={{ opacity: 0, x: -12 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.05 }}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"
-                      >
-                        <span className="text-sm font-medium">{t.label}</span>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            t.status === "Complete"
-                              ? "bg-green-100 text-green-700"
-                              : t.status === "Overdue"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {t.status}
-                        </span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+              {/* Quick Tasks widget temporarily removed while Tasks module is disabled */}
 
               <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
                 <CardContent className="p-6">

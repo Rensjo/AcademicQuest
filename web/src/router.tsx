@@ -2,7 +2,6 @@ import React from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import Dashboard from '@/pages/Dashboard'
 import AcademicPlanner from '@/pages/AcademicPlanner'
-import Tasks from '@/pages/Tasks'
 import SchedulePlanner from '@/pages/SchedulePlanner'
 import CoursePlanner from '@/pages/CoursePlanner'
 import GradeCalculator from '@/pages/GradeCalculator'
@@ -11,6 +10,7 @@ import Scholarships from '@/pages/Scholarships'
 import Textbooks from '@/pages/Textbooks'
 import Settings from '@/pages/Settings'
 import AppLayout from '@/components/AppLayout'
+import Tasks from '@/pages/Tasks'
 
 
 export const router = createBrowserRouter([
