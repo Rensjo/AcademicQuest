@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme, PALETTES } from '@/store/theme'
 import { useAQ } from '@/store/aqStore'
 import { useSchedule } from "@/store/scheduleStore";
+import { useAcademicPlan } from "@/store/academicPlanStore";
+import { useTasksStore, isWithinNextNDays, AQTask, TaskStatus } from "@/store/tasksStore";
 
 import React, { useMemo, useState, useEffect } from "react";
 // import { DashboardQuickTasks } from "@/pages/Tasks";
@@ -25,6 +27,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 // removed unused Switch/Input
 import { Label } from "@/components/ui/label";
 import {
@@ -71,10 +75,7 @@ const mock = {
   ],
 };
 
-const donutData = [
-  { name: "Complete", value: mock.kpis.tasksDonePct },
-  { name: "Remaining", value: 100 - mock.kpis.tasksDonePct },
-];
+// donut data now derived from real tasks (taskDonutData)
 
 const studyTrend = [
   { d: "Mon", h: 2.0 },
@@ -199,13 +200,13 @@ const GlowIconButton = ({
 
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
-const Stat = ({ label, value, icon: Icon, hint, colors }: { label: string; value: React.ReactNode; icon: IconType; hint?: string; colors: string[] }) => (
+const Stat = ({ label, value, icon: Icon, hint, colors, onIconClick }: { label: string; value: React.ReactNode; icon: IconType; hint?: string; colors: string[]; onIconClick?: () => void }) => (
   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
     <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
       <CardContent className="relative p-4 sm:p-5">
         <div className="flex flex-col gap-3">
             <div className="self-start">
-                <GlowIconButton Icon={Icon} colors={[colors[0], colors[3]]} />
+                <GlowIconButton Icon={Icon} colors={[colors[0], colors[3]]} onClick={onIconClick} />
             </div>
             <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -252,13 +253,71 @@ export default function AcademicQuestDashboard() {
     }
   }, []);
 
-  // router nav (call hook unconditionally and guard usage)
+  // router nav
   const navigate = useNavigate();
 
   // Store-driven theme hooks
   const theme = useTheme();
   const aq = useAQ();
   const COLORS = useColors();
+  const years = useAcademicPlan((s) => s.years);
+  const selectedYearId = useAcademicPlan((s) => s.selectedYearId);
+  const setSelectedYear = useAcademicPlan((s) => s.setSelectedYear);
+  const tasks = useTasksStore((s) => s.tasks);
+  const addTask = useTasksStore((s) => s.addTask);
+  const updateTask = useTasksStore((s) => s.updateTask);
+
+  // derive active year/term for quick-add defaults
+  const activeYear = React.useMemo(() => {
+    const yid = selectedYearId || years[0]?.id;
+    return years.find((y) => y.id === yid);
+  }, [years, selectedYearId]);
+  const activeTerm = React.useMemo(() => activeYear?.terms?.[0], [activeYear]);
+
+  // Tasks completion percent (match Tasks tab: only filled tasks by title, current term)
+  const taskPct = React.useMemo(() => {
+    const yid = activeYear?.id;
+    const tid = activeTerm?.id;
+    if (!yid || !tid) return 0;
+    const termTasks = tasks.filter((t) => t.yearId === yid && t.termId === tid);
+    const filled = termTasks.filter((t) => (t.title?.trim()?.length ?? 0) > 0);
+    if (!filled.length) return 0;
+    const completed = filled.filter((t) => t.status === "Completed").length;
+    return Math.round((completed / filled.length) * 100);
+  }, [tasks, activeYear?.id, activeTerm?.id]);
+
+  const taskDonutData = React.useMemo(() => ([
+    { name: "Complete", value: taskPct },
+    { name: "Remaining", value: 100 - taskPct },
+  ]), [taskPct]);
+
+  // quick add task dialog state
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [qTitle, setQTitle] = useState("");
+  const [qDate, setQDate] = useState("");
+  const [qTime, setQTime] = useState("");
+  const [qStatus, setQStatus] = useState<"Not Started"|"In Progress"|"Completed">("Not Started");
+  function commitQuickTask() {
+    if (!qTitle.trim() || !activeYear?.id || !activeTerm?.id) { setQuickOpen(false); return; }
+    const t: AQTask = {
+      id: crypto.randomUUID(),
+      yearId: activeYear.id,
+      termId: activeTerm.id,
+      courseId: undefined,
+      title: qTitle.trim(),
+      status: qStatus,
+      dueDate: qDate || undefined,
+      dueTime: qTime || undefined,
+      grade: undefined,
+    };
+  addTask(t);
+  // ensure Tasks tab opens on the same year as the new task
+  if (activeYear?.id) setSelectedYear(activeYear.id);
+  setQuickOpen(false);
+    setQTitle(""); setQDate(""); setQTime(""); setQStatus("Not Started");
+  // jump to Tasks tab
+  navigate("/tasks");
+  }
   
   // pull today's classes from the active term in the schedule store
   const getTodaySlots = useSchedule((s) => s.todaySlots);
@@ -279,10 +338,10 @@ export default function AcademicQuestDashboard() {
   // local mirror so dragging doesn't write to the store every tick
   const [accentLocal, setAccentLocal] = useState(theme.accent);
 
-  // keep in sync if theme.accent changes elsewhere
+  // keep local in sync only when theme.accent itself changes
   useEffect(() => {
-    if (accentLocal !== theme.accent) setAccentLocal(theme.accent);
-  }, [theme.accent, accentLocal]);
+    setAccentLocal(theme.accent);
+  }, [theme.accent]);
 
 
   // apply global font & dark/class mode
@@ -297,7 +356,8 @@ export default function AcademicQuestDashboard() {
   // Background style from local accent + palette
   const bgStyle = useMemo(() => {
     // Use accentLocal for live updates instead of theme.accent
-    const alpha = Math.min(0.35, Math.max(0.12, accentLocal / 260));
+  // Map 0–100 -> 0–0.5 for a more noticeable range
+  const alpha = Math.min(0.5, Math.max(0.0, accentLocal / 150));
     const hex = Math.round(alpha * 255).toString(16).padStart(2, '0');
 
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -360,16 +420,10 @@ export default function AcademicQuestDashboard() {
                   Your all‑in‑one academic tracker to boost productivity.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  {navigate ? (
-                    <Button className="rounded-2xl" onClick={() => navigate!("/planner")}>
-                      Open Planner
-                    </Button>
-                  ) : (
-                    <a href="/planner">
-                      <Button className="rounded-2xl">Open Planner</Button>
-                    </a>
-                  )}
-                  <Button variant="outline" className="rounded-2xl">Quick Add Task</Button>
+                  <Button className="rounded-2xl" onClick={() => navigate("/planner")}>
+                    Open Planner
+                  </Button>
+                  <Button variant="outline" className="rounded-2xl" onClick={() => setQuickOpen(true)}>Quick Add Task</Button>
                   <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/80 dark:bg-neutral-900/60 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0">Customize Widgets</Button>
                 </div>
               </div>
@@ -433,9 +487,22 @@ export default function AcademicQuestDashboard() {
                                 max={100}
                                 step={1}
                                 value={accentLocal}
-                                onChange={(e) => setAccentLocal(Math.max(0, Math.min(100, Number(e.target.value))))}
+                                onChange={(e) => {
+                                  const next = Math.max(0, Math.min(100, Number(e.target.value)));
+                                  setAccentLocal(next);
+                                  if (next !== theme.accent) theme.setAccent(next);
+                                }}
                                 onMouseUp={() => accentLocal !== theme.accent && theme.setAccent(accentLocal)}
                                 onTouchEnd={() => accentLocal !== theme.accent && theme.setAccent(accentLocal)}
+                                onWheel={(e) => {
+                                  e.preventDefault();
+                                  const delta = e.deltaY < 0 ? 2 : -2;
+                                  const next = Math.max(0, Math.min(100, accentLocal + delta));
+                                  if (next !== accentLocal) {
+                                    setAccentLocal(next);
+                                    if (next !== theme.accent) theme.setAccent(next);
+                                  }
+                                }}
                               />
                             </div>
                       </div>
@@ -513,10 +580,10 @@ export default function AcademicQuestDashboard() {
             <Card className="border-0 shadow-lg bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
               <CardContent className="p-5">
                 <h3 className="font-semibold mb-3">Quick Overview</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ">
-                    <Stat label="Current GPA" value={mock.kpis.gpa.toFixed(2)} icon={Calculator} hint="Auto‑computed from terms" colors={COLORS} />
-                    <Stat label="Units" value={mock.kpis.units} icon={School} hint="Enrolled this term" colors={COLORS} />
-                    <Stat label="Tasks Done" value={`${mock.kpis.tasksDonePct}%`} icon={ClipboardList} hint="All classes" colors={COLORS} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ">
+          <Stat label="Current GPA" value={mock.kpis.gpa.toFixed(2)} icon={Calculator} hint="Auto‑computed from terms" colors={COLORS} />
+          <Stat label="Units" value={mock.kpis.units} icon={School} hint="Enrolled this term" colors={COLORS} />
+          <Stat label="Tasks Done" value={`${taskPct}%`} icon={ClipboardList} hint="This term" colors={COLORS} onIconClick={() => navigate("/tasks")} />
                 </div>
               </CardContent>
             </Card>
@@ -524,12 +591,12 @@ export default function AcademicQuestDashboard() {
             <Card className="border-0 shadow-lg bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
               <CardContent className="p-5">
                 <h3 className="font-semibold mb-3">Task Completion</h3>
-                <div className="h-40">
+    <div className="h-40">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                       <Pie
                         dataKey="value"
-                        data={donutData}
+      data={taskDonutData}
                         innerRadius={55}
                         outerRadius={80}
                         startAngle={90}
@@ -542,7 +609,7 @@ export default function AcademicQuestDashboard() {
                         animationDuration={800}
                         animationEasing="ease-out"
                       >
-                        {donutData.map((_, i) => (
+      {taskDonutData.map((_, i) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
@@ -566,7 +633,7 @@ export default function AcademicQuestDashboard() {
                     Remaining
                   </span>
                 </div>
-                <p className="text-sm text-neutral-600">{mock.kpis.tasksDonePct}% completed across all classes</p>
+                <p className="text-sm text-neutral-600">{taskPct}% completed this term</p>
               </CardContent>
             </Card>
           </div>
@@ -640,7 +707,43 @@ export default function AcademicQuestDashboard() {
             </div>
 
             <div className="space-y-6">
-              {/* Quick Tasks widget temporarily removed while Tasks module is disabled */}
+              {/* Quick Tasks (next 7 days) */}
+              <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Quick Tasks for the Week</h3>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="rounded-2xl" onClick={() => setQuickOpen(true)}>Add Task</Button>
+                      <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0" onClick={() => navigate("/tasks")}>View Tasks</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {tasks.filter(t => t.status !== "Completed" && isWithinNextNDays(t.dueDate, 7)).slice(0,5).map((t) => (
+                      <div key={t.id} className="flex items-center justify-between p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{t.title}</p>
+                          <p className="text-xs text-muted-foreground">{t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "No due date"}{t.dueTime ? ` • ${t.dueTime}` : ""}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <Select value={t.status} onValueChange={(v: TaskStatus) => updateTask(t.id, { status: v })}>
+                            <SelectTrigger className="h-8 rounded-xl w-[140px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border border-black/10 bg-white/80 dark:bg-neutral-900/60 shadow-xl">
+                              <SelectItem value="Not Started">Not Started</SelectItem>
+                              <SelectItem value="In Progress">In Progress</SelectItem>
+                              <SelectItem value="Completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                    {tasks.filter(t => t.status !== "Completed" && isWithinNextNDays(t.dueDate, 7)).length === 0 && (
+                      <p className="text-sm text-muted-foreground">No tasks due in the next 7 days.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
               <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
                 <CardContent className="p-6">
@@ -680,7 +783,7 @@ export default function AcademicQuestDashboard() {
                     : () => (window.location.href = "/planner")
                 }
               />
-              <Feature icon={ClipboardList} title="Task Tracker" desc="Assignments by course with status, due date/time, days‑left, grade + completion chart." cta="Track Tasks" colors={COLORS} />
+              <Feature icon={ClipboardList} title="Task Tracker" desc="Assignments by course with status, due date/time, days‑left, grade + completion chart." cta="Track Tasks" colors={COLORS} onClick={() => navigate("/tasks")} />
               <Feature 
                 icon={CalendarDays} 
                 title="Schedule Planner" 
@@ -732,7 +835,44 @@ export default function AcademicQuestDashboard() {
           </div>
         </div>
 
-        {/* Badges modal (simple inline) */}
+          {/* Quick Add Task dialog */}
+          <Dialog open={quickOpen} onOpenChange={setQuickOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Quick Add Task</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-neutral-600">Title</label>
+                  <Input value={qTitle} onChange={(e) => setQTitle(e.target.value)} placeholder="e.g., OS Lab Report" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-neutral-600">Due date</label>
+                    <Input type="date" value={qDate} onChange={(e) => setQDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-neutral-600">Due time</label>
+                    <Input type="time" value={qTime} onChange={(e) => setQTime(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-600">Status</label>
+                  <select className="mt-1 h-9 w-full rounded-xl border border-black/10 bg-white dark:bg-neutral-900 px-3" value={qStatus} onChange={(e)=> setQStatus(e.target.value as "Not Started"|"In Progress"|"Completed")}>
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Completed</option>
+                  </select>
+                </div>
+              </div>
+              <DialogFooter className="mt-3">
+                <Button variant="outline" onClick={() => setQuickOpen(false)}>Cancel</Button>
+                <Button onClick={commitQuickTask}>Add Task</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Badges modal (simple inline) */}
         <AnimatePresence>
           {showBadges && (
             <motion.div

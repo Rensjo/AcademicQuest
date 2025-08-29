@@ -7,18 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarDays, Plus } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useAcademicPlan } from "@/store/academicPlanStore";
+import { useTasksStore, tasksByTerm, AQTask, TaskStatus } from "@/store/tasksStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTheme, PALETTES } from "@/store/theme";
 
-type Task = {
-  id: string;
-  courseId: string; // from Academic Planner's course row id
-  title: string;
-  status: "Not Started" | "In Progress" | "Completed";
-  dueDate?: string;
-  dueTime?: string;
-  grade?: string;
-};
+// Using global AQTask from tasks store
 
 // ---------- Gradient background (match Dashboard/Planner/Schedule) ----------
 function useThemedGradient() {
@@ -84,9 +77,10 @@ export default function Tasks() {
   const gradientStyle = useThemedGradient();
   // Pull academic plan data
   const years = useAcademicPlan((s) => s.years);
+  const selectedYearId = useAcademicPlan((s) => s.selectedYearId);
 
   // Active selection (default to first year/term)
-  const [activeYearId, setActiveYearId] = React.useState<string | undefined>(() => years[0]?.id);
+  const [activeYearId, setActiveYearId] = React.useState<string | undefined>(() => selectedYearId || years[0]?.id);
   const [activeTermId, setActiveTermId] = React.useState<string | undefined>(() => years[0]?.terms[0]?.id);
 
   // Keep active ids valid when plan changes
@@ -102,35 +96,51 @@ export default function Tasks() {
   const activeTerm = React.useMemo(() => activeYear?.terms.find((t) => t.id === activeTermId), [activeYear, activeTermId]);
   const termCourses = React.useMemo(() => (activeTerm?.courses || []).filter((c) => (c.code?.trim() || c.name?.trim())), [activeTerm]);
 
-  // Per-term rows map
-  const [rowsByKey, setRowsByKey] = React.useState<Record<string, Task[]>>({});
+  // Global tasks store
+  const tasks = useTasksStore((s) => s.tasks);
+  const addTask = useTasksStore((s) => s.addTask);
+  const updateTask = useTasksStore((s) => s.updateTask);
+
+  // Active-term tasks from store
   const termKey = activeYear && activeTerm ? `${activeYear.id}:${activeTerm.id}` : "";
-  const rows = rowsByKey[termKey] || [];
+  const termTasks: AQTask[] = React.useMemo(() => tasksByTerm(tasks, activeYearId, activeTermId), [tasks, activeYearId, activeTermId]);
 
-  // Ensure at least 20 default rows whenever term changes
-  React.useEffect(() => {
-    if (!termKey) return;
-    setRowsByKey((prev) => {
-      const current = prev[termKey] || [];
-      if (current.length >= 20) return prev;
-      const missing = 20 - current.length;
-      const blanks: Task[] = Array.from({ length: missing }).map(() => ({
-        id: crypto.randomUUID(),
-        courseId: "",
-        title: "",
-        status: "Not Started",
-        dueDate: "",
-        dueTime: "",
-        grade: "",
-      }));
-      return { ...prev, [termKey]: [...current, ...blanks] };
-    });
-  }, [termKey]);
+  // Placeholder handling (for reaching 20 rows visually)
+  const placeholderCount = Math.max(0, 20 - termTasks.length);
+  const [spawned, setSpawned] = React.useState<Set<string>>(new Set());
+  React.useEffect(() => { setSpawned(new Set()); }, [termKey]);
 
-  // (removed legacy first-load top-up; now handled per-term in the effect above)
+  function spawnFromPlaceholder(phKey: string, patch: Partial<AQTask>) {
+    if (!activeYear || !activeTerm) return;
+    if (spawned.has(phKey)) return;
+    const base: AQTask = {
+      id: crypto.randomUUID(),
+      yearId: activeYear.id,
+      termId: activeTerm.id,
+      courseId: patch.courseId,
+      title: patch.title || "",
+      status: patch.status || "Not Started",
+      dueDate: patch.dueDate,
+      dueTime: patch.dueTime,
+      grade: patch.grade,
+    };
+    addTask(base);
+    const next = new Set(spawned);
+    next.add(phKey);
+    setSpawned(next);
+  }
 
-  const completed = rows.filter(r => r.status === "Completed").length;
-  const pct = rows.length ? Math.round((completed / rows.length) * 100) : 0;
+  type PlaceholderRow = { id: string; courseId?: string; title: string; status: TaskStatus; dueDate?: string; dueTime?: string; grade?: string };
+  const placeholders: PlaceholderRow[] = React.useMemo(
+    () => Array.from({ length: placeholderCount }).map((_, i) => ({ id: `ph:${i}`, courseId: "", title: "", status: "Not Started", dueDate: "", dueTime: "", grade: "" })),
+    [placeholderCount]
+  );
+  const displayRows: (AQTask | PlaceholderRow)[] = React.useMemo(() => [...termTasks, ...placeholders], [termTasks, placeholders]);
+
+  // Only consider "filled" tasks (non-empty title)
+  const filled = termTasks.filter(r => (r.title?.trim()?.length ?? 0) > 0);
+  const completed = filled.filter(r => r.status === "Completed").length;
+  const pct = filled.length ? Math.round((completed / filled.length) * 100) : 0;
 
   // Donut chart data
   const donut = [
@@ -139,22 +149,8 @@ export default function Tasks() {
   ];
 
   function addRow() {
-    if (!termKey) return;
-    setRowsByKey((prev) => ({
-      ...prev,
-      [termKey]: [
-        ...(prev[termKey] || []),
-        { id: crypto.randomUUID(), courseId: "", title: "", status: "Not Started", dueDate: "", dueTime: "", grade: "" },
-      ],
-    }));
-  }
-
-  function updateRow(id: string, patch: Partial<Task>) {
-    if (!termKey) return;
-    setRowsByKey((prev) => ({
-      ...prev,
-      [termKey]: (prev[termKey] || []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
-    }));
+    if (!activeYear || !activeTerm) return;
+    addTask({ id: crypto.randomUUID(), yearId: activeYear.id, termId: activeTerm.id, courseId: "", title: "", status: "Not Started", dueDate: undefined, dueTime: undefined, grade: undefined });
   }
 
   // Term/Yr selection dialog
@@ -163,6 +159,17 @@ export default function Tasks() {
     setActiveYearId(yId);
     setActiveTermId(tId);
     setTermDialogOpen(false);
+  }
+
+  // Days-left helper (calendar days difference, ignoring time)
+  function getDaysLeft(dueDate?: string): number | undefined {
+    if (!dueDate) return undefined;
+    const today = new Date();
+    const d0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const due = new Date(dueDate);
+    const d1 = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    const diff = (d1.getTime() - d0.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.round(diff);
   }
 
   return (
@@ -254,14 +261,21 @@ export default function Tasks() {
                     <th className="p-3 w-[150px]">Status</th>
                     <th className="p-3 w-[140px]">Due Date</th>
                     <th className="p-3 w-[110px]">Due Time</th>
+                    <th className="p-3 w-[110px]">Days Left</th>
                     <th className="p-3 w-[90px]">Grade</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {displayRows.map((r) => (
                     <tr key={r.id} className="border-t border-black/5 dark:border-white/10">
                       <td className="p-2">
-                        <Select value={r.courseId} onValueChange={(v) => updateRow(r.id, { courseId: v })}>
+                        <Select value={r.courseId ?? ""} onValueChange={(v) => {
+                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                            spawnFromPlaceholder(r.id, { courseId: v });
+                          } else {
+                            updateTask(r.id as string, { courseId: v });
+                          }
+                        }}>
                           <SelectTrigger className="h-8 text-left"><SelectValue placeholder="Select course"/></SelectTrigger>
                           <SelectContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-black/10 dark:border-white/10">
                             {termCourses.length === 0 && (
@@ -276,10 +290,24 @@ export default function Tasks() {
                         </Select>
                       </td>
                       <td className="p-2">
-                        <Input className="h-8" value={r.title} onChange={(e) => updateRow(r.id, { title: e.target.value })} placeholder="Assignment title" />
+                        <Input className="h-8" value={r.title} onChange={(e) => {
+                          const val = e.target.value;
+                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                            spawnFromPlaceholder(r.id, { title: val });
+                          } else {
+                            updateTask(r.id as string, { title: val });
+                          }
+                        }} placeholder="Assignment title" />
                       </td>
                       <td className="p-2">
-                        <Select value={r.status} onValueChange={(v) => updateRow(r.id, { status: v as Task["status"] })}>
+                        <Select value={r.status} onValueChange={(v) => {
+                          const st = v as TaskStatus;
+                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                            spawnFromPlaceholder(r.id, { status: st });
+                          } else {
+                            updateTask(r.id as string, { status: st });
+                          }
+                        }}>
                           <SelectTrigger className="h-8 text-left"><SelectValue placeholder="Status"/></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Not Started">Not Started</SelectItem>
@@ -289,13 +317,42 @@ export default function Tasks() {
                         </Select>
                       </td>
                       <td className="p-2">
-                        <Input className="h-8" type="date" value={r.dueDate || ""} onChange={(e) => updateRow(r.id, { dueDate: e.target.value })} />
+                        <Input className="h-8" type="date" value={r.dueDate || ""} onChange={(e) => {
+                          const val = e.target.value;
+                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                            spawnFromPlaceholder(r.id, { dueDate: val });
+                          } else {
+                            updateTask(r.id as string, { dueDate: val });
+                          }
+                        }} />
                       </td>
                       <td className="p-2">
-                        <Input className="h-8" type="time" value={r.dueTime || ""} onChange={(e) => updateRow(r.id, { dueTime: e.target.value })} />
+                        <Input className="h-8" type="time" value={r.dueTime || ""} onChange={(e) => {
+                          const val = e.target.value;
+                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                            spawnFromPlaceholder(r.id, { dueTime: val });
+                          } else {
+                            updateTask(r.id as string, { dueTime: val });
+                          }
+                        }} />
                       </td>
                       <td className="p-2">
-                        <Input className="h-8" value={r.grade || ""} onChange={(e) => updateRow(r.id, { grade: e.target.value })} />
+                        {(() => {
+                          const d = getDaysLeft(r.dueDate);
+                          if (d === undefined) return <span className="text-muted-foreground">—</span>;
+                          const cls = d < 0 ? "text-red-500" : d === 0 ? "text-amber-600" : "";
+                          return <span className={cls}>{d}d</span>;
+                        })()}
+                      </td>
+                      <td className="p-2">
+                        <Input className="h-8" value={r.grade || ""} onChange={(e) => {
+                          const val = e.target.value;
+                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                            spawnFromPlaceholder(r.id, { grade: val });
+                          } else {
+                            updateTask(r.id as string, { grade: val });
+                          }
+                        }} />
                       </td>
                     </tr>
                   ))}
