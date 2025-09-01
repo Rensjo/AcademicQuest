@@ -138,3 +138,39 @@ button:focus-visible {
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* TipTap content tweaks: ensure italics and list markers render as expected */
+.tiptap em,
+.tiptap i {
+  font-style: italic;
+}
+.tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.25rem; /* ~pl-5 */
+  margin: 0.25rem 0; /* tighten a bit */
+}
+.tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+.tiptap li {
+  margin: 0.125rem 0;
+}
+
+/* Default heading sizes inside the editor */
+.tiptap h1 { font-size: 28px; line-height: 1.2; }
+.tiptap h2 { font-size: 24px; line-height: 1.25; }
+.tiptap h3 { font-size: 20px; line-height: 1.3; }
+.tiptap h4 { font-size: 18px; line-height: 1.35; }
+
+.tiptap blockquote {
+  border-left: 3px solid rgba(0, 0, 0, 0.1);
+  padding-left: 0.75rem; /* pl-3 */
+  margin: 0.5rem 0;      /* my-2 */
+  color: hsl(var(--muted-foreground));
+}
+.dark .tiptap blockquote {
+  border-left-color: rgba(255, 255, 255, 0.15);
+  color: hsl(var(--muted-foreground));
+}

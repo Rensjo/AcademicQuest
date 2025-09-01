@@ -16,7 +16,6 @@ import {
   ClipboardList,
   BookOpenCheck,
   Calculator,
-  LineChart,
   BookMarked,
   Settings,
   School,
@@ -796,9 +795,14 @@ export default function AcademicQuestDashboard() {
                     : () => (window.location.href = "/schedule")
                 }
               />              
-              <Feature icon={BookOpenCheck} title="Course Planner" desc="Instructor, time, room, syllabus, meetings/week, weighted grading, projects, notes & study plan." cta="Open Course Planner" colors={COLORS} />
-              <Feature icon={Calculator} title="Grade Calculator" desc="Weighted assignments (weight, score, out‑of) with live total %." cta="Calculate Grades" colors={COLORS} />
-              <Feature icon={LineChart} title="GPA Calculator" desc="Per‑term credits, % grade, grade points, quality points, term & cumulative GPA." cta="View GPA" colors={COLORS} />
+              <Feature 
+                icon={BookOpenCheck} 
+                title="Course Planner" 
+                desc="Instructor, time, room, syllabus, meetings/week, weighted grading, projects, notes & study plan." 
+                cta="Open Course Planner" 
+                colors={COLORS}
+                onClick={() => navigate("/courses")}
+              />
               <Feature icon={Wallet} title="Scholarship Tracker" desc="Status, deadlines, days‑left, submitted docs, awards with charts." cta="Track Scholarships"  colors={COLORS}/>
               <Feature icon={BookMarked} title="Textbook Tracker" desc="Per‑class texts, publisher, status, purchase & return dates." cta="Log Textbooks" colors={COLORS} />
               <Feature icon={Settings} title="Settings" desc="Themes, notifications, data import/export, grading scales, calendar sync, time format." cta="Open Settings" colors={COLORS} />
@@ -830,7 +834,7 @@ export default function AcademicQuestDashboard() {
             <p className="text-xs text-neutral-500">Tip: Import syllabi or connect a calendar to auto‑create tasks & classes.</p>
             <div className="flex gap-3">
               <Button variant="outline" className="rounded-2xl">Import Syllabus</Button>
-              <Button className="rounded-2xl">Add Course</Button>
+              <Button className="rounded-2xl" onClick={() => navigate("/courses")}>Add Course</Button>
             </div>
           </div>
         </div>

@@ -1,13 +1,299 @@
 import React from 'react'
-import { useAQ } from '@/store/aqStore'
+import TopTabsInline from '@/components/TopTabsInline'
+import useThemedGradient from '@/hooks/useThemedGradient'
+import { CalendarDays, Plus, Link as LinkIcon } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
+import { useTheme, PALETTES } from '@/store/theme'
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
+import { saveToOPFS, getOPFSFileURL } from '@/lib/opfs'
+import { useSettings } from '@/store/settingsStore'
 
+const scrollbarStyles = `
+	.light-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+	.light-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 5px; }
+	.light-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.20); border-radius: 5px; }
+	.light-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.30); }
+	.dark-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+	.dark-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.10); border-radius: 5px; }
+	.dark-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 5px; }
+	.dark-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
+`;
 
 export default function Scholarships() {
-const aq = useAQ()
-return (
-<div className="max-w-5xl mx-auto px-4 py-8">
-<h1 className="text-2xl font-bold">Scholarships</h1>
-<p className="text-neutral-600 mt-2">Term: {aq.term}</p>
-</div>
-)
+	const bgStyle = useThemedGradient()
+	const theme = useTheme()
+	const COLORS = PALETTES[theme.palette]
+	const settings = useSettings()
+
+	// Data model for scholarships
+	type Status = 'Received' | 'Applied' | 'In-Progress' | 'Rejected' | 'Not Started'
+	type Row = {
+		id: string
+		status: Status
+		name: string
+		location: string
+		dueDate?: string
+		daysLeft?: number // derived
+		submittedDate?: string
+		resume: boolean
+		essay: boolean
+		otherDocs: boolean
+		// OPFS paths for attachments
+		resumePath?: string
+		essayPath?: string
+		otherDocsPaths?: string[]
+		amountAwarded?: number
+	}
+
+	function createRow(): Row {
+		return {
+			id: crypto.randomUUID(),
+			status: 'Not Started',
+			name: '',
+			location: '',
+			dueDate: '',
+			submittedDate: '',
+			resume: false,
+			essay: false,
+			otherDocs: false,
+			otherDocsPaths: [],
+			amountAwarded: undefined,
+		}
+	}
+
+	const [rows, setRows] = React.useState<Row[]>(() => Array.from({ length: 8 }, () => createRow()))
+
+	function setRow(id: string, patch: Partial<Row>) {
+		setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+	}
+
+	function addRow() {
+		setRows((prev) => [...prev, createRow()])
+	}
+
+	// Attachment helpers
+	type AttachKind = 'resume' | 'essay' | 'otherDocs'
+	async function attachFile(id: string, kind: AttachKind) {
+		return new Promise<void>((resolve) => {
+			const input = document.createElement('input')
+			input.type = 'file'
+			input.accept = '.pdf,.doc,.docx,.txt,.rtf,.md,.png,.jpg,.jpeg,.heic,.webp,.ppt,.pptx,.xls,.xlsx,application/*,text/*,image/*'
+			if (kind === 'otherDocs') input.multiple = true
+			input.onchange = async () => {
+				const files = input.files ? Array.from(input.files) : []
+				if (!files.length) return resolve()
+				const savedPaths: string[] = []
+				for (const f of files) {
+					const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+					const path = `scholarships/${id}/${kind}/${Date.now()}_${safeName}`
+					const res = await saveToOPFS(path, f)
+					if (res.ok) savedPaths.push(path)
+				}
+				setRows(prev => prev.map(r => {
+					if (r.id !== id) return r
+					const update: Partial<Row> = { }
+					if (kind === 'resume') { update.resume = true; update.resumePath = savedPaths[0] }
+					if (kind === 'essay') { update.essay = true; update.essayPath = savedPaths[0] }
+					if (kind === 'otherDocs') {
+						update.otherDocs = true;
+						update.otherDocsPaths = [ ...(r.otherDocsPaths ?? []), ...savedPaths ]
+					}
+					return { ...r, ...update }
+				}))
+				resolve()
+			}
+			// trigger
+			input.click()
+		})
+	}
+
+	async function openAttachment(r: Row, kind: AttachKind) {
+		const path = kind === 'resume'
+			? r.resumePath
+			: kind === 'essay'
+				? r.essayPath
+				: (r.otherDocsPaths && r.otherDocsPaths.length ? r.otherDocsPaths[r.otherDocsPaths.length - 1] : undefined)
+		if (!path) return
+		const url = await getOPFSFileURL(path)
+		if (url) window.open(url, '_blank')
+	}
+
+	// days left helper
+	function daysLeft(date?: string) {
+		if (!date) return undefined
+		const today = new Date()
+		const d0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+	const d = new Date(date)
+	if (Number.isNaN(d.getTime())) return undefined
+		const d1 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+		return Math.round((d1 - d0) / (1000 * 60 * 60 * 24))
+	}
+
+	const todayStr = React.useMemo(
+		() => new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
+		[]
+	)
+
+	// donut data by status
+	const counts = React.useMemo(() => {
+		const base: Record<Status, number> = {
+			'Received': 0,
+			'Applied': 0,
+			'In-Progress': 0,
+			'Rejected': 0,
+			'Not Started': 0,
+		}
+		for (const r of rows) base[r.status]++
+		return base
+	}, [rows])
+
+	const donut = React.useMemo(
+		() => [
+			{ name: 'Received', value: counts['Received'] },
+			{ name: 'Applied', value: counts['Applied'] },
+			{ name: 'In-Progress', value: counts['In-Progress'] },
+			{ name: 'Rejected', value: counts['Rejected'] },
+			{ name: 'Not Started', value: counts['Not Started'] },
+		],
+		[counts]
+	)
+
+	return (
+		<div className="min-h-screen w-full" style={bgStyle}>
+			<style>{scrollbarStyles}</style>
+			<div className="max-w-[1400px] mx-auto px-3 py-6 space-y-6">
+				{/* Header */}
+				<div className="flex items-start justify-between gap-4">
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-3 flex-wrap">
+							<CalendarDays className="h-5 w-5" />
+							<h1 className="text-2xl font-bold">Scholarships</h1>
+							<TopTabsInline />
+						</div>
+					</div>
+					<Card className="shrink-0 border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60 w-[200px] sm:w-[220px]">
+						<CardContent className="p-4">
+							<div className="h-32">
+								<ResponsiveContainer width="100%" height="100%">
+									<PieChart>
+										<Pie dataKey="value" data={donut} innerRadius={38} outerRadius={50} startAngle={90} endAngle={-270} paddingAngle={2} cornerRadius={3} stroke="transparent">
+											{donut.map((_, i) => (
+												<Cell key={i} fill={COLORS[i % COLORS.length]} />
+											))}
+										</Pie>
+										<Tooltip />
+									</PieChart>
+								</ResponsiveContainer>
+							</div>
+							<div className="text-center text-sm mt-1">Status mix</div>
+							<div className="text-center text-xs text-muted-foreground">{todayStr}</div>
+						</CardContent>
+					</Card>
+				</div>
+
+				{/* Table card */}
+				<Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
+					<CardContent className="p-4">
+						<div className="flex items-center justify-between mb-3">
+							<div className="text-sm font-semibold">Applications</div>
+							<Button size="sm" className="rounded-2xl" onClick={addRow}><Plus className="h-4 w-4 mr-1"/>Add Scholarship</Button>
+						</div>
+						<div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm">
+							<table className="w-full text-sm">
+								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40">
+									<tr className="text-left">
+										<th className="p-3 w-[170px]">Status</th>
+										<th className="p-3 w-[260px]">Scholarship Name</th>
+										<th className="p-3 w-[180px]">Location</th>
+										<th className="p-3 w-[140px]">Date Due</th>
+										<th className="p-3 w-[110px]">Days Left</th>
+										<th className="p-3 w-[150px]">Date Submitted</th>
+										<th className="p-3 w-[110px]">Resume</th>
+										<th className="p-3 w-[90px]">Essay</th>
+										<th className="p-3 w-[150px]">Other Documents</th>
+										<th className="p-3 w-[160px]">Amount Awarded</th>
+									</tr>
+								</thead>
+								<tbody>
+									{rows.map((r) => (
+										<tr key={r.id} className="border-t border-black/5 dark:border-white/10">
+											<td className="p-2">
+												<Select value={r.status} onValueChange={(v) => setRow(r.id, { status: v as Status })}>
+													<SelectTrigger className="h-8 text-left"><SelectValue placeholder="Status"/></SelectTrigger>
+													<SelectContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-black/10 dark:border-white/10">
+														{(['Received','Applied','In-Progress','Rejected','Not Started'] as Status[]).map(s => (
+															<SelectItem key={s} value={s}>{s}</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</td>
+											<td className="p-2"><Input className="h-8" value={r.name} onChange={(e) => setRow(r.id, { name: e.target.value })} placeholder="Scholarship name"/></td>
+											<td className="p-2"><Input className="h-8" value={r.location} onChange={(e) => setRow(r.id, { location: e.target.value })} placeholder="Location"/></td>
+											<td className="p-2"><Input className="h-8" type="date" value={r.dueDate || ''} onChange={(e) => setRow(r.id, { dueDate: e.target.value })}/></td>
+											<td className="p-2">
+												{(() => {
+													const d = daysLeft(r.dueDate)
+													if (d === undefined) return <span className="text-muted-foreground">—</span>
+													const cls = d < 0 ? 'text-red-500' : d === 0 ? 'text-amber-600' : ''
+													return <span className={cls}>{d}d</span>
+												})()}
+											</td>
+											<td className="p-2"><Input className="h-8" type="date" value={r.submittedDate || ''} onChange={(e) => setRow(r.id, { submittedDate: e.target.value })}/></td>
+											<td className="p-2">
+												<Button
+													variant="link"
+													size="sm"
+													className="group h-8 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+													title={r.resumePath ? r.resumePath.split('/').pop() : undefined}
+													aria-label={r.resume ? 'Open resume' : 'Attach resume'}
+													onClick={() => (r.resumePath ? openAttachment(r, 'resume') : attachFile(r.id, 'resume'))}
+												>
+													{r.resume ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+												</Button>
+											</td>
+											<td className="p-2">
+												<Button
+													variant="link"
+													size="sm"
+													className="group h-8 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+													title={r.essayPath ? r.essayPath.split('/').pop() : undefined}
+													aria-label={r.essay ? 'Open essay' : 'Attach essay'}
+													onClick={() => (r.essayPath ? openAttachment(r, 'essay') : attachFile(r.id, 'essay'))}
+												>
+													{r.essay ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+												</Button>
+											</td>
+											<td className="p-2">
+												<Button
+													variant="link"
+													size="sm"
+													className="group h-8 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+													title={r.otherDocsPaths && r.otherDocsPaths.length ? `${r.otherDocsPaths.length} file(s)` : undefined}
+													aria-label={r.otherDocs ? 'Open other documents' : 'Attach other documents'}
+													onClick={() => ((r.otherDocsPaths && r.otherDocsPaths.length) ? openAttachment(r, 'otherDocs') : attachFile(r.id, 'otherDocs'))}
+												>
+													{r.otherDocs ? `${r.otherDocsPaths?.length ?? 0} file(s)` : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+												</Button>
+											</td>
+											<td className="p-2">
+												<div className="flex items-center gap-2">
+													<span className="text-muted-foreground w-10 text-right">
+														{new Intl.NumberFormat(undefined, { style: 'currency', currency: settings.preferredCurrency }).formatToParts(0).find(p => p.type === 'currency')?.value}
+													</span>
+													<Input className="h-8" type="number" step="0.01" value={r.amountAwarded ?? ''} onChange={(e) => setRow(r.id, { amountAwarded: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0.00"/>
+												</div>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		</div>
+	)
 }

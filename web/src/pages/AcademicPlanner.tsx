@@ -92,7 +92,6 @@ function TopTabsInline() {
     { label: "Task Tracker", path: "/tasks" },
     { label: "Schedule Planner", path: "/schedule" },
     { label: "Course Planner", path: "/courses" },
-    { label: "GPA Calc", path: "/gpa" },
     { label: "Scholarships", path: "/scholarships" },
     { label: "Textbooks", path: "/textbooks" },
     { label: "Settings", path: "/settings" },

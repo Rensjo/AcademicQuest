@@ -1,13 +1,279 @@
 import React from 'react'
-import { useAQ } from '@/store/aqStore'
+import TopTabsInline from '@/components/TopTabsInline'
+import useThemedGradient from '@/hooks/useThemedGradient'
+import { CalendarDays } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import Slider from '@/components/ui/slider'
+import { useTheme, PALETTES, type Palette, type Mode } from '@/store/theme'
+import { useSettings, type DefaultRoute, type CurrencyCode } from '@/store/settingsStore'
+// stores imported in backup via localStorage keys; direct hooks not needed here
 
+const scrollbarStyles = `
+	.light-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+	.light-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 5px; }
+	.light-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.20); border-radius: 5px; }
+	.light-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.30); }
+	.dark-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+	.dark-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.10); border-radius: 5px; }
+	.dark-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 5px; }
+	.dark-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
+`;
 
 export default function Settings() {
-const aq = useAQ()
-return (
-<div className="max-w-5xl mx-auto px-4 py-8">
-<h1 className="text-2xl font-bold">Settings</h1>
-<p className="text-neutral-600 mt-2">Term: {aq.term}</p>
-</div>
-)
+	const bgStyle = useThemedGradient()
+	const theme = useTheme()
+	const settings = useSettings()
+
+	function scrollTo(id: string) {
+		const el = document.getElementById(id)
+		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+	}
+
+	// Backup & restore (JSON of persisted slices)
+	async function exportData() {
+		const payload = {
+			settings: localStorage.getItem('aq:settings'),
+			theme: localStorage.getItem('aq:theme'),
+			plan: localStorage.getItem('aq:academic-plan'),
+			schedule: localStorage.getItem('aq:schedule'),
+			tasks: localStorage.getItem('aq:tasks'),
+		}
+		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.href = url
+		a.download = 'academicquest-backup.json'
+		a.click()
+		URL.revokeObjectURL(url)
+	}
+
+	async function importData() {
+		const input = document.createElement('input')
+		input.type = 'file'
+		input.accept = 'application/json'
+		input.onchange = async () => {
+			const f = input.files?.[0]
+			if (!f) return
+			const text = await f.text()
+			try {
+				const obj = JSON.parse(text)
+				if (obj.settings) localStorage.setItem('aq:settings', obj.settings)
+				if (obj.theme) localStorage.setItem('aq:theme', obj.theme)
+				if (obj.plan) localStorage.setItem('aq:academic-plan', obj.plan)
+				if (obj.schedule) localStorage.setItem('aq:schedule', obj.schedule)
+				if (obj.tasks) localStorage.setItem('aq:tasks', obj.tasks)
+				window.location.reload()
+			} catch {
+				alert('Invalid backup file')
+			}
+		}
+		input.click()
+	}
+
+	return (
+			<div className="min-h-screen w-full" style={bgStyle}>
+				<style>{scrollbarStyles}</style>
+				<div className="max-w-[1400px] mx-auto px-3 py-6 space-y-6">
+					{/* Top header: title + tabs on the left, school year chip on the right */}
+					<div className="flex items-start justify-between gap-4">
+						<div className="flex flex-col gap-1">
+							<div className="flex items-center gap-3 flex-wrap">
+								<CalendarDays className="h-5 w-5" />
+								<h1 className="text-2xl font-bold">Settings</h1>
+							</div>
+							<div className="mt-1">
+								<TopTabsInline />
+							</div>
+						</div>
+						<div className="flex items-center gap-2 min-w-[220px] justify-end">
+							<Button className="rounded-xl" onClick={importData}>Import backup</Button>
+						</div>
+					</div>
+
+					<div className="flex gap-6">
+						{/* Left quick navigation */
+						}
+						<div className="w-48 shrink-0 sticky top-4 self-start">
+							<div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Sections</div>
+							<div className="flex flex-col gap-2">
+								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('appearance')}>Appearance</Button>
+								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('nav-defaults')}>Navigation & Defaults</Button>
+								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('notifications')}>Notifications & Effects</Button>
+								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('gamification')}>Gamification</Button>
+								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('data')}>Data</Button>
+							</div>
+						</div>
+
+						{/* Main centered column */}
+						<div className="flex-1">
+							<div className="mx-auto max-w-3xl space-y-4">
+								<Card id="appearance" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
+									<CardContent className="p-4 space-y-4">
+								<div className="text-sm font-semibold">Appearance</div>
+								<div className="grid grid-cols-2 gap-3 items-center">
+									<label className="text-sm">Theme mode</label>
+									<Select value={theme.mode} onValueChange={(v) => theme.setMode(v as Mode)}>
+										<SelectTrigger className="h-8"><SelectValue placeholder="Mode"/></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="light">Light</SelectItem>
+											<SelectItem value="dark">Dark</SelectItem>
+											<SelectItem value="system">System</SelectItem>
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Palette</label>
+									<Select value={theme.palette} onValueChange={(v) => theme.setPalette(v as Palette)}>
+										<SelectTrigger className="h-8"><SelectValue placeholder="Palette"/></SelectTrigger>
+										<SelectContent>
+											{Object.keys(PALETTES).map(p => (
+												<SelectItem key={p} value={p}>{p}</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Accent</label>
+									<Slider value={[theme.accent]} min={0} max={100} step={1} onValueChange={([v]) => theme.setAccent(v)} />
+
+									<label className="text-sm">Radius</label>
+									<Slider value={[theme.radius]} min={8} max={24} step={1} onValueChange={([v]) => theme.setRadius(v)} />
+
+									<label className="text-sm">Text scale</label>
+									<Slider value={[theme.textScale * 100]} min={90} max={110} step={1} onValueChange={([v]) => theme.setTextScale(Number((v/100).toFixed(2)))} />
+
+									<label className="text-sm">Reduced motion</label>
+									<Switch checked={settings.reducedMotion} onCheckedChange={(b)=>settings.set({ reducedMotion: b })} />
+
+									<label className="text-sm">Gradients</label>
+									<Switch checked={settings.gradientsEnabled} onCheckedChange={(b)=>settings.set({ gradientsEnabled: b })} />
+								</div>
+								</CardContent>
+							</Card>
+
+							<Card id="nav-defaults" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
+								<CardContent className="p-4 space-y-4">
+								<div className="text-sm font-semibold">Navigation & Defaults</div>
+								<div className="grid grid-cols-2 gap-3 items-center">
+									<label className="text-sm">Default page</label>
+									<Select value={settings.defaultRoute} onValueChange={(v)=>settings.set({ defaultRoute: v as DefaultRoute })}>
+										<SelectTrigger className="h-8"><SelectValue placeholder="Route"/></SelectTrigger>
+										<SelectContent>
+											{['/','/planner','/tasks','/schedule','/course-planner','/scholarships','/textbooks','/settings'].map(r => (
+												<SelectItem key={r} value={r}>{r}</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Week starts on</label>
+									<Select value={String(settings.weekStart)} onValueChange={(v)=>settings.set({ weekStart: Number(v) as 0|1 })}>
+										<SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="0">Sunday</SelectItem>
+											<SelectItem value="1">Monday</SelectItem>
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Time format</label>
+									<Select value={settings.time24h ? '24' : '12'} onValueChange={(v)=>settings.set({ time24h: v==='24' })}>
+										<SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="12">12-hour</SelectItem>
+											<SelectItem value="24">24-hour</SelectItem>
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Date format</label>
+									<Select value={settings.dateFormat} onValueChange={(v: 'auto' | 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD')=>settings.set({ dateFormat: v })}>
+										<SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="auto">Auto</SelectItem>
+											<SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+											<SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+											<SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Autosave</label>
+									<Select value={String(settings.autosaveSeconds)} onValueChange={(v)=>settings.set({ autosaveSeconds: Number(v) as 10|30|60|120 })}>
+										<SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+										<SelectContent>
+											{[10,30,60,120].map(v => (<SelectItem key={v} value={String(v)}>{v}s</SelectItem>))}
+										</SelectContent>
+									</Select>
+
+										<label className="text-sm">Currency</label>
+										<Select value={settings.preferredCurrency} onValueChange={(v: CurrencyCode)=>settings.set({ preferredCurrency: v })}>
+											<SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+											<SelectContent>
+												{(['USD','EUR','GBP','CAD','AUD','JPY','INR','CNY','KRW','NGN','ZAR','PHP'] as CurrencyCode[]).map(c => (
+													<SelectItem key={c} value={c}>{c}</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+
+									<label className="text-sm">Ask before leaving</label>
+									<Switch checked={settings.askBeforeLeave} onCheckedChange={(b)=>settings.set({ askBeforeLeave: b })} />
+								</div>
+								</CardContent>
+							</Card>
+
+							<Card id="notifications" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
+								<CardContent className="p-4 space-y-4">
+								<div className="text-sm font-semibold">Notifications & Effects</div>
+								<div className="grid grid-cols-2 gap-3 items-center">
+									<label className="text-sm">App notifications</label>
+									<Switch checked={settings.notificationsEnabled} onCheckedChange={(b)=>settings.set({ notificationsEnabled: b })} />
+
+									<label className="text-sm">Quiet hours</label>
+									<div className="flex gap-2">
+										<Input className="h-8 w-28" value={settings.quietStart} onChange={(e)=>settings.set({ quietStart: e.target.value })} />
+										<Input className="h-8 w-28" value={settings.quietEnd} onChange={(e)=>settings.set({ quietEnd: e.target.value })} />
+									</div>
+
+									<label className="text-sm">Confetti</label>
+									<Switch checked={settings.confettiEnabled} onCheckedChange={(b)=>settings.set({ confettiEnabled: b })} />
+
+									<label className="text-sm">Sounds</label>
+									<Switch checked={settings.soundsEnabled} onCheckedChange={(b)=>settings.set({ soundsEnabled: b })} />
+								</div>
+								</CardContent>
+							</Card>
+
+							<Card id="gamification" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
+								<CardContent className="p-4 space-y-4">
+								<div className="text-sm font-semibold">Gamification</div>
+								<div className="grid grid-cols-2 gap-3 items-center">
+									<label className="text-sm">Enable gamification</label>
+									<Switch checked={settings.gamificationEnabled} onCheckedChange={(b)=>settings.set({ gamificationEnabled: b })} />
+
+									<label className="text-sm">Show streaks</label>
+									<Switch checked={settings.showStreaks} onCheckedChange={(b)=>settings.set({ showStreaks: b })} />
+
+									<label className="text-sm">Achievements</label>
+									<Switch checked={settings.achievements} onCheckedChange={(b)=>settings.set({ achievements: b })} />
+
+									<label className="text-sm">Challenges</label>
+									<Switch checked={settings.challenges} onCheckedChange={(b)=>settings.set({ challenges: b })} />
+								</div>
+								</CardContent>
+							</Card>
+
+							<Card id="data" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
+								<CardContent className="p-4 space-y-4">
+									<div className="text-sm font-semibold">Data</div>
+									<div className="text-xs text-muted-foreground">Use the Import button at the top-right. You can export your data below. This backs up settings, theme, academic plan, schedule, and tasks as JSON.</div>
+									<div className="flex justify-end">
+										<Button variant="secondary" className="rounded-xl" onClick={exportData}>Export backup</Button>
+									</div>
+								</CardContent>
+							</Card>
+							</div>
+						</div>
+					</div>
+			</div>
+		</div>
+	)
 }

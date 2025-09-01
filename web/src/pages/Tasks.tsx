@@ -43,7 +43,7 @@ function useThemedGradient() {
 }
 
 // ---------- Inline top tabs (beside title) ----------
-function TopTabsInline({ active }: { active: "dashboard"|"planner"|"tasks"|"schedule"|"courses"|"gpa"|"scholarships"|"textbooks"|"settings" }) {
+function TopTabsInline({ active }: { active: "dashboard"|"planner"|"tasks"|"schedule"|"courses"|"scholarships"|"textbooks"|"settings" }) {
   const navigate = useNavigate();
   const tabs = [
     { key: "dashboard", label: "Dashboard", path: "/" },
@@ -51,8 +51,7 @@ function TopTabsInline({ active }: { active: "dashboard"|"planner"|"tasks"|"sche
     { key: "tasks", label: "Task Tracker", path: "/tasks" },
     { key: "schedule", label: "Schedule Planner", path: "/schedule" },
     // match existing routes
-    { key: "courses", label: "Course Planner", path: "/course-planner" },
-    { key: "gpa", label: "GPA Calc", path: "/gpa-calculator" },
+  { key: "courses", label: "Course Planner", path: "/course-planner" },
     { key: "scholarships", label: "Scholarships", path: "/scholarships" },
     { key: "textbooks", label: "Textbooks", path: "/textbooks" },
     { key: "settings", label: "Settings", path: "/settings" },
@@ -174,13 +173,15 @@ export default function Tasks() {
 
   return (
     <div className="min-h-screen w-full" style={gradientStyle}>
-      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
-  {/* Header: title + tabs on the left, donut on the right (match other pages) */}
-  <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap min-w-0">
-            <CalendarDays className="h-5 w-5" />
-            <h1 className="text-2xl font-bold">Task Tracker</h1>
-            <div className="min-w-0 overflow-x-hidden">
+      <div className="max-w-[1400px] mx-auto px-4 py-7 space-y-6">
+        {/* Header: title on first row, tabs on second; donut on right */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5" />
+              <h1 className="text-2xl font-bold">Task Trackerrrrrr</h1>
+            </div>
+            <div className="mt-2 min-w-0 overflow-x-hidden">
               <TopTabsInline active="tasks" />
             </div>
           </div>

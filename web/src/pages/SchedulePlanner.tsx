@@ -636,8 +636,7 @@ function TopTabsInline() {
     { label: "Academic Planner", path: "/planner" }, // wire later
     { label: "Task Tracker", path: "/tasks" }, // wire later
     { label: "Schedule Planner", path: "/schedule", active: true },
-    { label: "Course Planner", path: "/courses" }, // wire later
-    { label: "GPA Calc", path: "/gpa" }, // wire later
+    { label: "Course Planner", path: "/courses" }, // wire later    
     { label: "Scholarships", path: "/scholarships" }, // wire later
     { label: "Textbooks", path: "/textbooks" }, // wire later
     { label: "Settings", path: "/settings" }, // wire later

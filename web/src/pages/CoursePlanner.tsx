@@ -24,7 +24,6 @@ function TopTabsInline() {
     { label: "Task Tracker", path: "/tasks" },
     { label: "Schedule Planner", path: "/schedule" },
     { label: "Course Planner", path: "/courses", active: true },
-    { label: "GPA Calc", path: "/gpa" },
     { label: "Scholarships", path: "/scholarships" },
     { label: "Textbooks", path: "/textbooks" },
     { label: "Settings", path: "/settings" },
@@ -47,6 +46,18 @@ function TopTabsInline() {
 
 // week checkbox helper
 const DAYS = ["S", "M", "T", "W", "Th", "F", "S2"] as const;
+
+// Neutral scrollbar styles for light/dark
+const scrollbarStyles = `
+  .light-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+  .light-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 5px; }
+  .light-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.20); border-radius: 5px; }
+  .light-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.30); }
+  .dark-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+  .dark-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.10); border-radius: 5px; }
+  .dark-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 5px; }
+  .dark-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
+`;
 
 export default function CoursePlanner() {
   const { toast } = useToast();
@@ -71,6 +82,8 @@ export default function CoursePlanner() {
       backgroundPosition: '10% 0%, 90% 10%, 50% 100%, 0 0',
     } as React.CSSProperties;
   }, [theme.accent, theme.mode, theme.palette]);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = theme.mode === 'dark' || (theme.mode === 'system' && prefersDark);
   // current year/term from schedule store
   const years = useSchedule((s) => s.years);
   const selectedYearId = useSchedule((s) => s.selectedYearId);
@@ -293,6 +306,7 @@ export default function CoursePlanner() {
   if (!hydrated) {
     return (
       <div className="min-h-screen w-full" style={gradientStyle}>
+  <style>{scrollbarStyles}</style>
         <div className="max-w-[1400px] mx-auto px-3.5 py-7">
           <div className="flex items-center gap-3 mb-4">
             <CalendarDays className="h-5 w-5" />
@@ -308,6 +322,7 @@ export default function CoursePlanner() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden" style={gradientStyle}>
+  <style>{scrollbarStyles}</style>
       <div className="max-w-[1400px] mx-auto px-3 py-7 space-y-7">
         {/* Top header: title on first row, tabs on second row; course controls stay at top-right */}
         <div className="relative">
@@ -522,7 +537,7 @@ export default function CoursePlanner() {
                       {fold.files.length === 0 ? (
                         <div className="text-xs text-muted-foreground">No files</div>
                       ) : (
-                        <div className="overflow-x-auto">
+                        <div className={`overflow-x-auto ${isDark ? 'dark-scrollbar' : 'light-scrollbar'}`}>
                           <div className="min-w-[420px]">
                             <div className="grid grid-cols-[1fr_90px_180px] gap-2 px-2 py-1 text-[11px] text-muted-foreground border-b border-black/10 dark:border-white/10">
                               <div>Name</div>

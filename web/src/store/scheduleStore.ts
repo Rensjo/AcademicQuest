@@ -71,10 +71,7 @@ const defaultYear = (): AcademicYear => {
   };
 };
 
-function timeToMinutes(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
+// (helper removed; not used)
 
 export const useSchedule = create<ScheduleState>()(
   persist(
@@ -190,7 +187,7 @@ export const useSchedule = create<ScheduleState>()(
         return undefined;
       },
 
-      todaySlots: () => {
+  todaySlots: () => {
         const d = new Date();
         const dow = d.getDay() as DayIndex;
         const s = get();
