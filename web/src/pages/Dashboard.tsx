@@ -24,6 +24,9 @@ import {
   Star,
   Timer,
   Wallet,
+  Clock,
+  MapPin,
+  CalendarX,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,14 +106,74 @@ const useColors = () => {
     return PALETTES[palette];
 };
 
+// Enhanced color schemes for different icon categories
+const getIconColorScheme = (type: 'primary' | 'academic' | 'productivity' | 'navigation' | 'feature', colors: string[]) => {
+    const [c0, c1, c2, c3, c4] = colors;
+    
+    switch (type) {
+        case 'primary':
+            return {
+                primary: c0,
+                secondary: c3,
+                glow: c1,
+                accent: c2
+            };
+        case 'academic':
+            return {
+                primary: c1,
+                secondary: c0,
+                glow: c3,
+                accent: c4
+            };
+        case 'productivity':
+            return {
+                primary: c2,
+                secondary: c1,
+                glow: c0,
+                accent: c3
+            };
+        case 'navigation':
+            return {
+                primary: c3,
+                secondary: c0,
+                glow: c1,
+                accent: c2
+            };
+        case 'feature':
+            return {
+                primary: c0,
+                secondary: c1,
+                glow: c2,
+                accent: c3
+            };
+        default:
+            return {
+                primary: c0,
+                secondary: c3,
+                glow: c1,
+                accent: c2
+            };
+    }
+};
+
 // Small helpers
 const Chip = ({ active, onClick, color, label }: { active?: boolean; onClick?: () => void; color: string; label?: string }) => (
   <button
     onClick={onClick}
-    className={`h-9 px-3 rounded-2xl border transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-      active ? "border-black/10 ring-2 ring-black/10" : "border-black/5 hover:border-black/20"
-    }`}
-    style={{ background: color, color: "#fff" }}
+    className={`h-9 px-3 rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 backdrop-blur-md
+      ${active 
+        ? "border-white/30 ring-2 ring-white/20 shadow-lg scale-105 shadow-black/10" 
+        : "border-white/10 hover:border-white/40 hover:scale-105 hover:shadow-lg shadow-black/5"
+      }`}
+    style={{ 
+      background: active 
+        ? `linear-gradient(135deg, ${color}FF 0%, ${color}CC 50%, ${color}AA 100%)` 
+        : `linear-gradient(135deg, ${color}80 0%, ${color}60 50%, ${color}40 100%)`,
+      color: "#fff",
+      boxShadow: active 
+        ? `0 0 20px ${color}40, 0 4px 12px rgba(0,0,0,0.15)`
+        : `0 2px 8px ${color}20, 0 2px 4px rgba(0,0,0,0.1)`
+    }}
     aria-label={label}
   />
 );
@@ -133,16 +196,20 @@ const GlowIconButton = ({
     title,
     size = "md",
     colors,
+    type = 'primary',
 }: {
     Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     onClick?: () => void;
     title?: string;
     size?: "sm" | "md" | "lg";
-    colors: string[]; // pass [primary, secondary]
+    colors: string[]; // pass array of colors from theme
+    type?: 'primary' | 'academic' | 'productivity' | 'navigation' | 'feature';
 }) => {
     const dims =
         size === "lg" ? "h-12 w-12" : size === "sm" ? "h-9 w-9" : "h-11 w-11";
-    const [c0, c1] = colors?.length ? colors : ["#0ea5e9", "#a78bfa"];
+    
+    const colorScheme = getIconColorScheme(type, colors);
+    const { primary, secondary, glow, accent } = colorScheme;
 
     return (
         <button
@@ -157,57 +224,105 @@ const GlowIconButton = ({
             e.currentTarget.style.setProperty("--my", `${y}px`);
         }}
         className={`relative group inline-grid place-items-center ${dims} shrink-0 p-0 rounded-2xl
-                    border border-black/10 dark:border-white/10
-                    bg-neutral-50/90 dark:bg-neutral-800/60
-                    overflow-hidden transition`}        
+                    border border-white/20 dark:border-white/10
+                    bg-gradient-to-br from-white/95 via-white/90 to-white/80 
+                    dark:from-neutral-800/90 dark:via-neutral-800/70 dark:to-neutral-900/60
+                    backdrop-blur-md overflow-hidden transition-all duration-300
+                    hover:scale-105 active:scale-95
+                    shadow-lg hover:shadow-2xl`}        
+        style={{
+            background: `linear-gradient(135deg, ${primary}15 0%, ${secondary}10 50%, ${glow}08 100%)`
+        }}
         >
-        {/* Outer soft glow */}
+        {/* Enhanced outer glow */}
         <span
             aria-hidden
-            className="pointer-events-none absolute -inset-6 rounded-[24px] blur-2xl opacity-0 group-hover:opacity-100 transition duration-300"
-            style={{ background: `linear-gradient(90deg, ${c0}55, ${c1}55)` }}
-        />
-        {/* Mouse spotlight */}
-        <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300"
-            style={{ background: `radial-gradient(120px circle at var(--mx) var(--my), ${c0}22, transparent 40%)` }}
-        />
-        {/* Outline glow (ambient) */}
-        <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-2xl"
-            style={{
-                boxShadow: `0 0 0 1px rgba(0,0,0,0.06),
-                            0 0 10px ${c0}1f,
-                            0 0 18px ${c1}14`,
+            className="pointer-events-none absolute -inset-8 rounded-[32px] blur-3xl opacity-0 group-hover:opacity-100 transition-all duration-500"
+            style={{ 
+                background: `conic-gradient(from 0deg, ${primary}40, ${secondary}30, ${glow}35, ${accent}25, ${primary}40)`,
+                animation: 'spin 8s linear infinite'
             }}
         />
-        {/* Outline glow (hover boost) */}
+        
+        {/* Rotating border gradient */}
         <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-300"
+            className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300"
             style={{
-                boxShadow: `0 0 0 1px ${c0}55,
-                            0 0 16px ${c0}55,
-                            0 0 28px ${c1}40`,
+                background: `conic-gradient(from 45deg, transparent 0%, ${primary}60 25%, transparent 50%, ${secondary}60 75%, transparent 100%)`,
+                mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                maskComposite: 'xor',
+                padding: '1px'
             }}
         />
-        {/* Icon */}
-        <Icon className="relative z-10 block h-5 w-5 m-0" />
+        
+        {/* Mouse spotlight with enhanced colors */}
+        <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300"
+            style={{ 
+                background: `radial-gradient(140px circle at var(--mx) var(--my), ${primary}30, ${secondary}15, transparent 60%)`,
+                mixBlendMode: 'overlay'
+            }}
+        />
+        
+        {/* Base ambient glow */}
+        <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-2xl transition-all duration-300"
+            style={{
+                boxShadow: `
+                    0 0 0 1px ${primary}20,
+                    0 2px 8px ${primary}15,
+                    0 4px 16px ${secondary}10,
+                    inset 0 1px 0 rgba(255,255,255,0.1)
+                `,
+            }}
+        />
+        
+        {/* Enhanced hover glow */}
+        <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300"
+            style={{
+                boxShadow: `
+                    0 0 0 1px ${primary}60,
+                    0 4px 16px ${primary}40,
+                    0 8px 32px ${secondary}30,
+                    0 16px 48px ${glow}20,
+                    inset 0 1px 0 rgba(255,255,255,0.2)
+                `,
+            }}
+        />
+        
+        {/* Icon with enhanced styling */}
+        <Icon className="relative z-10 block h-5 w-5 m-0 transition-all duration-200 group-hover:scale-110" 
+              style={{ 
+                  filter: `drop-shadow(0 1px 2px ${primary}30)`,
+                  color: `${primary}`
+              }} 
+        />
         </button>
     );
 };
 
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
-const Stat = ({ label, value, icon: Icon, hint, colors, onIconClick }: { label: string; value: React.ReactNode; icon: IconType; hint?: string; colors: string[]; onIconClick?: () => void }) => (
+const Stat = ({ label, value, icon: Icon, hint, colors, onIconClick, iconType = 'academic' }: { 
+  label: string; 
+  value: React.ReactNode; 
+  icon: IconType; 
+  hint?: string; 
+  colors: string[]; 
+  onIconClick?: () => void;
+  iconType?: 'primary' | 'academic' | 'productivity' | 'navigation' | 'feature';
+}) => (
   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
     <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
       <CardContent className="relative p-4 sm:p-5">
         <div className="flex flex-col gap-3">
             <div className="self-start">
-                <GlowIconButton Icon={Icon} colors={[colors[0], colors[3]]} onClick={onIconClick} />
+                <GlowIconButton Icon={Icon} colors={colors} onClick={onIconClick} type={iconType} />
             </div>
             <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -220,17 +335,25 @@ const Stat = ({ label, value, icon: Icon, hint, colors, onIconClick }: { label: 
   </motion.div>
 );
 
-const Feature = ({ icon: Icon, title, desc, cta, colors, onClick }: { icon: IconType; title: string; desc: string; cta?: string; colors: string[]; onClick?: () => void }) => (
+const Feature = ({ icon: Icon, title, desc, cta, colors, onClick, iconType = 'feature' }: { 
+  icon: IconType; 
+  title: string; 
+  desc: string; 
+  cta?: string; 
+  colors: string[]; 
+  onClick?: () => void;
+  iconType?: 'primary' | 'academic' | 'productivity' | 'navigation' | 'feature';
+}) => (
   <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-    <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-shadow rounded-3xl bg-white/80 dark:bg-neutral-900/60">
+    <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-md hover:scale-[1.02] group">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-3">
-            <GlowIconButton Icon={Icon} colors={[colors[0], colors[3] ?? colors[0]]} />
-            <h3 className="font-semibold text-lg tracking-tight">{title}</h3>
+            <GlowIconButton Icon={Icon} colors={colors} type={iconType} />
+            <h3 className="font-semibold text-lg tracking-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">{title}</h3>
         </div>
-        <p className="text-sm text-neutral-600 leading-relaxed mb-4">{desc}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-4">{desc}</p>
         {cta && (
-          <Button variant="outline" className="rounded-2xl" onClick={onClick}>{cta}</Button>
+          <Button variant="outline" className="rounded-2xl border-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/50 dark:hover:to-purple-950/50 transition-all duration-300" onClick={onClick}>{cta}</Button>
         )}
       </CardContent>
     </Card>
@@ -255,6 +378,19 @@ export default function AcademicQuestDashboard() {
         // ignore
       }
     }
+  }, []);
+
+  // Add CSS animation for rotating glow effect
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
   }, []);
 
   // router nav
@@ -561,13 +697,39 @@ export default function AcademicQuestDashboard() {
                   Your all‑in‑one Gamified Academic Tracker for Productivity.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Button className="rounded-2xl" onClick={() => navigate("/planner")}>
-                    Open Planner
+                  <Button 
+                    className="rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 
+                             dark:from-blue-500 dark:via-purple-500 dark:to-blue-600
+                             hover:from-blue-700 hover:via-purple-700 hover:to-blue-800
+                             dark:hover:from-blue-600 dark:hover:via-purple-600 dark:hover:to-blue-700
+                             shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95
+                             text-white font-medium tracking-wide
+                             border-0 ring-2 ring-blue-200/50 dark:ring-purple-400/30 hover:ring-blue-300/70 dark:hover:ring-purple-300/50
+                             transform hover:-translate-y-0.5 active:translate-y-0" 
+                    onClick={() => navigate("/planner")}
+                  >
+                    <span className="relative z-10">Open Planner</span>
                   </Button>
-                  <Button variant="outline" className="rounded-2xl" onClick={() => setQuickOpen(true)}>Quick Add Task</Button>
                   <Button 
                     variant="outline" 
-                    className="rounded-2xl" 
+                    className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                             backdrop-blur-md hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                             border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
+                             shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                             text-gray-700 dark:text-gray-200 hover:text-green-700 dark:hover:text-emerald-300
+                             font-medium tracking-wide"
+                    onClick={() => setQuickOpen(true)}
+                  >
+                    <span>Quick Add Task</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                             backdrop-blur-md hover:from-orange-50/90 hover:to-amber-50/80 dark:hover:from-orange-950/40 dark:hover:to-amber-950/30 
+                             border-gray-200/60 dark:border-gray-600/40 hover:border-orange-200/60 dark:hover:border-amber-400/30
+                             shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                             text-gray-700 dark:text-gray-200 hover:text-orange-700 dark:hover:text-amber-300
+                             font-medium tracking-wide" 
                     onClick={() => {
                       // Force show Pomodoro at bottom-right corner
                       localStorage.setItem('aq:pomo-corner', 'br')
@@ -581,9 +743,19 @@ export default function AcademicQuestDashboard() {
                     }}
                   >
                     <Timer className="h-4 w-4 mr-2" />
-                    Show Pomodoro
+                    <span>Show Pomodoro</span>
                   </Button>
-                  <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/80 dark:bg-neutral-900/60 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0" onClick={() => navigate('/settings')}>Settings</Button>
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-2xl bg-transparent text-foreground hover:bg-gradient-to-r hover:from-gray-100/80 hover:to-gray-200/60 
+                             dark:hover:from-gray-700/60 dark:hover:to-gray-800/80 dark:bg-neutral-900/60 border-0 shadow-none 
+                             focus-visible:outline-none focus-visible:ring-0 transition-all duration-300 hover:scale-105 active:scale-95
+                             hover:shadow-lg dark:hover:shadow-gray-900/50 transform hover:-translate-y-0.5 active:translate-y-0
+                             font-medium tracking-wide" 
+                    onClick={() => navigate('/settings')}
+                  >
+                    <span className="relative z-10">Settings</span>
+                  </Button>
                 </div>
               </div>
 
@@ -615,8 +787,31 @@ export default function AcademicQuestDashboard() {
                       <span>🔥 Streak: {gamification.stats.streakDays}d</span>
                   </div>
                   <div className="mt-3 flex gap-2">
-                      <Button size="sm" className="rounded-2xl" onClick={() => { setGamificationTab('status'); setGamificationOpen(true); }}>Status</Button>
-                      <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}>View Badges</Button>
+                      <Button 
+                        size="sm" 
+                        className="rounded-2xl bg-gradient-to-r from-purple-600/90 to-violet-600/90 dark:from-purple-500/90 dark:to-violet-500/90
+                                  hover:from-purple-700/95 hover:to-violet-700/95 dark:hover:from-purple-400/95 dark:hover:to-violet-400/95
+                                  text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                  hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                  font-medium tracking-wide backdrop-blur-md
+                                  ring-2 ring-purple-200/50 dark:ring-purple-400/30 hover:ring-purple-300/60 dark:hover:ring-purple-300/40"
+                        onClick={() => { setGamificationTab('status'); setGamificationOpen(true); }}
+                      >
+                        Status
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                                 backdrop-blur-md hover:from-purple-50/90 hover:to-violet-50/80 dark:hover:from-purple-950/40 dark:hover:to-violet-950/30 
+                                 border-gray-200/60 dark:border-gray-600/40 hover:border-purple-200/60 dark:hover:border-violet-400/30
+                                 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                                 text-gray-700 dark:text-gray-200 hover:text-purple-700 dark:hover:text-violet-300
+                                 font-medium tracking-wide"
+                        onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}
+                      >
+                        <span>View Badges</span>
+                      </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -682,11 +877,12 @@ export default function AcademicQuestDashboard() {
                                     type="button"
                                     variant="ghost"
                                     onClick={() => theme.setMode(key as "light" | "dark" | "system")}
-                                    className={`h-9 px-3 gap-2 rounded-2xl bg-transparent 
+                                    className={`h-9 px-3 gap-2 rounded-2xl transition-all duration-300 
+                                      hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
                                       ${active 
-                                        ? "bg-black/5 dark:bg-white/10 text-foreground" 
-                                        : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10"}
-                                      border-0 shadow-none focus-visible:outline-none focus-visible:ring-0`}
+                                        ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-md" 
+                                        : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-gray-800/80 dark:to-gray-900/70 text-muted-foreground hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"}
+                                      font-medium tracking-wide focus-visible:outline-none focus-visible:ring-0`}
                                     aria-pressed={active}
                                   >
                                     <Icon className="h-4 w-4 mr-1" />
@@ -739,11 +935,11 @@ export default function AcademicQuestDashboard() {
             <Card className="border-0 shadow-lg bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
               <CardContent className="p-5">
                 <h3 className="font-semibold mb-3">Quick Overview</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ">
-          <Stat label="Current GPA" value={displayGPA.toFixed(2)} icon={Calculator} hint="Auto‑computed from Academic Planner" colors={COLORS} />
-          <Stat label="Units" value={totalUnits} icon={School} hint="Enrolled this term" colors={COLORS} />
-          <Stat label="Tasks Done" value={`${taskPct}%`} icon={ClipboardList} hint="This term" colors={COLORS} onIconClick={() => navigate("/tasks")} />
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ">
+                    <Stat label="Current GPA" value={displayGPA.toFixed(2)} icon={Calculator} hint="Auto‑computed from Academic Planner" colors={COLORS} onIconClick={() => navigate("/planner")} iconType="academic" />
+                    <Stat label="Units" value={totalUnits} icon={School} hint="Enrolled this term" colors={COLORS} onIconClick={() => navigate("/planner")} iconType="primary" />
+                    <Stat label="Tasks Done" value={`${taskPct}%`} icon={ClipboardList} hint="This term" colors={COLORS} onIconClick={() => navigate("/tasks")} iconType="productivity" />
+                  </div>
               </CardContent>
             </Card>
 
@@ -802,43 +998,163 @@ export default function AcademicQuestDashboard() {
             <div className="lg:col-span-2 space-y-6">
               <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold">Today’s Schedule</h3>
                       {navigate ? (
-                        <Button variant="outline" className="rounded-2xl" onClick={() => navigate!("/schedule")}>
-                          <CalendarDays className="h-4 w-4 mr-2" />View Week
+                        <Button 
+                          variant="outline" 
+                          className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                                   backdrop-blur-md hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                                   border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
+                                   shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                                   text-gray-700 dark:text-gray-200 hover:text-blue-700 dark:hover:text-indigo-300
+                                   font-medium tracking-wide"
+                          onClick={() => navigate!("/schedule")}
+                        >
+                          <CalendarDays className="h-4 w-4 mr-2" />
+                          <span>View Week</span>
                         </Button>
                       ) : (
                         <a href="/schedule">
-                          <Button variant="outline" className="rounded-2xl">
-                            <CalendarDays className="h-4 w-4 mr-2" />View Week
+                          <Button 
+                            variant="outline" 
+                            className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                                     backdrop-blur-md hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                                     border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
+                                     shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                                     text-gray-700 dark:text-gray-200 hover:text-blue-700 dark:hover:text-indigo-300
+                                     font-medium tracking-wide"
+                          >
+                            <CalendarDays className="h-4 w-4 mr-2" />
+                            <span>View Week</span>
                           </Button>
                         </a>
                       )}
                   </div>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    {(todaySlots.length ? todaySlots : mock.scheduleToday).map((s, i) => (
-                      <motion.div
-                        key={`${s.time}-${s.course}-${i}`}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-sky-500/5"
-                      >
-                        <div>
-                          <p className="text-xs text-muted-foreground">{s.time}</p>
-                          <p className="font-semibold">{s.course}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Room</p>
-                          <p className="font-medium">{s.room ?? "—"}</p>
-                        </div>
-                      </motion.div>
-                    ))}
+                  <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {(todaySlots.length ? todaySlots : mock.scheduleToday).map((s, i) => {
+                      // Dynamic color scheme based on index
+                      const colorSchemes = [
+                        {
+                          bg: 'from-blue-50/80 to-indigo-100/60 dark:from-blue-950/40 dark:to-indigo-950/30',
+                          border: 'border-blue-200/50 dark:border-blue-800/30',
+                          timeColor: 'text-blue-600 dark:text-blue-400',
+                          courseColor: 'text-blue-800 dark:text-blue-200',
+                          roomColor: 'text-indigo-600 dark:text-indigo-400',
+                          accent: 'bg-blue-500'
+                        },
+                        {
+                          bg: 'from-emerald-50/80 to-green-100/60 dark:from-emerald-950/40 dark:to-green-950/30',
+                          border: 'border-emerald-200/50 dark:border-emerald-800/30',
+                          timeColor: 'text-emerald-600 dark:text-emerald-400',
+                          courseColor: 'text-emerald-800 dark:text-emerald-200',
+                          roomColor: 'text-green-600 dark:text-green-400',
+                          accent: 'bg-emerald-500'
+                        },
+                        {
+                          bg: 'from-purple-50/80 to-violet-100/60 dark:from-purple-950/40 dark:to-violet-950/30',
+                          border: 'border-purple-200/50 dark:border-purple-800/30',
+                          timeColor: 'text-purple-600 dark:text-purple-400',
+                          courseColor: 'text-purple-800 dark:text-purple-200',
+                          roomColor: 'text-violet-600 dark:text-violet-400',
+                          accent: 'bg-purple-500'
+                        },
+                        {
+                          bg: 'from-amber-50/80 to-orange-100/60 dark:from-amber-950/40 dark:to-orange-950/30',
+                          border: 'border-amber-200/50 dark:border-amber-800/30',
+                          timeColor: 'text-amber-600 dark:text-amber-400',
+                          courseColor: 'text-amber-800 dark:text-amber-200',
+                          roomColor: 'text-orange-600 dark:text-orange-400',
+                          accent: 'bg-amber-500'
+                        },
+                        {
+                          bg: 'from-rose-50/80 to-pink-100/60 dark:from-rose-950/40 dark:to-pink-950/30',
+                          border: 'border-rose-200/50 dark:border-rose-800/30',
+                          timeColor: 'text-rose-600 dark:text-rose-400',
+                          courseColor: 'text-rose-800 dark:text-rose-200',
+                          roomColor: 'text-pink-600 dark:text-pink-400',
+                          accent: 'bg-rose-500'
+                        }
+                      ];
+                      
+                      const scheme = colorSchemes[i % colorSchemes.length];
+                      
+                      return (
+                        <motion.div
+                          key={`${s.time}-${s.course}-${i}`}
+                          initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ 
+                            delay: i * 0.1, 
+                            duration: 0.4,
+                            type: "spring",
+                            stiffness: 100,
+                            damping: 20
+                          }}
+                          whileHover={{ 
+                            scale: 1.02, 
+                            y: -2,
+                            transition: { duration: 0.2 }
+                          }}
+                          className={`relative group p-5 rounded-2xl bg-gradient-to-br ${scheme.bg} 
+                                    border-2 ${scheme.border} shadow-lg hover:shadow-xl 
+                                    transition-all duration-300 cursor-pointer backdrop-blur-sm
+                                    overflow-hidden`}
+                        >
+                          {/* Accent line */}
+                          <div className={`absolute left-0 top-0 w-1 h-full ${scheme.accent} opacity-60 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                          
+                          {/* Time badge */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-white/60 dark:bg-black/20 
+                                          border border-white/40 dark:border-white/10 backdrop-blur-sm`}>
+                              <div className={`w-2 h-2 rounded-full ${scheme.accent}`}></div>
+                              <span className={`text-sm font-bold ${scheme.timeColor}`}>{s.time}</span>
+                            </div>
+                            <div className={`p-1.5 rounded-lg bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10`}>
+                              <Clock className={`h-3 w-3 ${scheme.timeColor}`} />
+                            </div>
+                          </div>
+                          
+                          {/* Course info */}
+                          <div className="space-y-2">
+                            <h4 className={`font-bold text-lg ${scheme.courseColor} leading-tight`}>
+                              {s.course}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              <MapPin className={`h-4 w-4 ${scheme.roomColor}`} />
+                              <span className={`text-sm font-medium ${scheme.roomColor}`}>
+                                {s.room ?? "Room TBA"}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Subtle background pattern */}
+                          <div className="absolute -right-4 -bottom-4 w-16 h-16 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
+                            <div className={`w-full h-full rounded-full ${scheme.accent} blur-xl`}></div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                    
                     {!todaySlots.length && (
-                      <p className="text-xs text-muted-foreground">
-                        Tip: Add class blocks in <span className="font-medium">Schedule Planner</span> and set the active term dates to populate today's schedule here.
-                      </p>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="col-span-full p-8 rounded-2xl bg-gradient-to-br from-gray-50/80 to-gray-100/60 
+                                 dark:from-gray-800/50 dark:to-gray-900/30 border-2 border-dashed 
+                                 border-gray-300/50 dark:border-gray-600/30 text-center backdrop-blur-sm"
+                      >
+                        <div className="mb-4">
+                          <CalendarX className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">
+                          No classes scheduled for today
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 leading-relaxed">
+                          Add class blocks in <span className="font-semibold text-blue-600 dark:text-blue-400">Schedule Planner</span> and set the active term dates to populate Today's Schedule here.
+                        </p>
+                      </motion.div>
                     )}
                   </div>
                 </CardContent>
@@ -848,7 +1164,18 @@ export default function AcademicQuestDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Study Hours (7‑day)</h3>
-                    <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0" onClick={() => setStudyHoursOpen(true)}>Details</Button>
+                    <Button 
+                      variant="ghost" 
+                      className="rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
+                                hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
+                                text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                font-medium tracking-wide backdrop-blur-md
+                                ring-2 ring-blue-200/50 dark:ring-blue-400/30 hover:ring-blue-300/60 dark:hover:ring-blue-300/40"
+                      onClick={() => setStudyHoursOpen(true)}
+                    >
+                      Details
+                    </Button>
                   </div>
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
@@ -875,8 +1202,30 @@ export default function AcademicQuestDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Quick Tasks for the Week</h3>
                     <div className="flex gap-2">
-                      <Button variant="outline" className="rounded-2xl" onClick={() => setQuickOpen(true)}>Add Task</Button>
-                      <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0" onClick={() => navigate("/tasks")}>View Tasks</Button>
+                      <Button 
+                        variant="outline" 
+                        className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                                 backdrop-blur-md hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                                 border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
+                                 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                                 text-gray-700 dark:text-gray-200 hover:text-green-700 dark:hover:text-emerald-300
+                                 font-medium tracking-wide"
+                        onClick={() => setQuickOpen(true)}
+                      >
+                        <span>Add Task</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
+                                  hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
+                                  text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                  hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                  font-medium tracking-wide backdrop-blur-md
+                                  ring-2 ring-blue-200/50 dark:ring-blue-400/30 hover:ring-blue-300/60 dark:hover:ring-blue-300/40"
+                        onClick={() => navigate("/tasks")}
+                      >
+                        View Tasks
+                      </Button>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -910,12 +1259,19 @@ export default function AcademicQuestDashboard() {
               <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Grade Distribution</h3>
+                    <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">Grade Distribution</h3>
                     <Button
-                      variant="ghost"
-                      className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
+                      variant="outline"
+                      className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-white/70 dark:from-neutral-800/90 dark:to-neutral-900/70 
+                                backdrop-blur-md hover:from-blue-50/90 hover:to-purple-50/90 dark:hover:from-blue-950/50 dark:hover:to-purple-950/50 
+                                border-white/40 dark:border-white/10 hover:border-blue-200/60 dark:hover:border-purple-400/30
+                                shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                                text-gray-700 dark:text-gray-200 hover:text-blue-700 dark:hover:text-purple-200
+                                font-medium tracking-wide"
                       onClick={() => setGradesOpen(true)}
-                    >More Details</Button>
+                    >
+                      <span className="relative z-10">More Details</span>
+                    </Button>
                   </div>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
@@ -935,65 +1291,123 @@ export default function AcademicQuestDashboard() {
 
           {/* Grade distribution details dialog */}
           <Dialog open={gradesOpen} onOpenChange={setGradesOpen}>
-            <DialogContent className="max-w-3xl border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/95">
-              <DialogHeader>
-                <DialogTitle>Current Term Performance</DialogTitle>
+            <DialogContent className="max-w-4xl max-h-[90vh] border-0 shadow-2xl rounded-3xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 
+                                    dark:from-neutral-900/95 dark:via-neutral-900/90 dark:to-neutral-800/85 backdrop-blur-md
+                                    ring-1 ring-white/20 dark:ring-white/10 flex flex-col">
+              <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-200/30 dark:border-gray-700/30">
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 
+                                      dark:from-blue-400 dark:via-purple-400 dark:to-blue-300 bg-clip-text text-transparent">
+                  Current Term Performance
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-5">
-                {/* Quick stats */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Courses with GPA</div><div className="text-lg font-semibold">{termStats.count}</div></div>
-                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Total Credits</div><div className="text-lg font-semibold">{termStats.credits}</div></div>
-                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Weighted GPA</div><div className="text-lg font-semibold">{termStats.weightedDisplay.toFixed(2)}</div></div>
-                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Average (unweighted)</div><div className="text-lg font-semibold">{termStats.avgDisplay.toFixed(2)}</div></div>
-                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Median</div><div className="text-lg font-semibold">{termStats.medianDisplay.toFixed(2)}</div></div>
-                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Best / Worst</div><div className="text-lg font-semibold">{termStats.bestDisplay.toFixed(2)} / {termStats.worstDisplay.toFixed(2)}</div></div>
-                </div>
-                {/* Dist chart */}
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={gradeDist}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="range" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="count" fill={COLORS[2]} radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Courses table */}
-                <div className={`overflow-auto rounded-2xl border border-black/10 dark:border-white/10 ${scrollbarClass}`}>
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-neutral-50/70 dark:bg-neutral-800/60 text-muted-foreground">
-                        <th className="text-left p-2 font-medium">Code</th>
-                        <th className="text-left p-2 font-medium">Course</th>
-                        <th className="text-left p-2 font-medium">Credits</th>
-                        <th className="text-left p-2 font-medium">GPA</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {termStats.coursesSorted.map((c) => {
-                        const g = Math.max(0, Math.min(4, (c.gpa as number)));
-                        const display = gpaScale === '1-highest' ? (5 - g) : g;
-                        return (
-                          <tr key={c.id} className="border-t border-black/5 dark:border-white/10">
-                            <td className="p-2 whitespace-nowrap">{c.code || '-'}</td>
-                            <td className="p-2">{c.name || '-'}</td>
-                            <td className="p-2">{Number(c.credits) || 0}</td>
-                            <td className="p-2 font-medium">{display.toFixed(2)}</td>
+              
+              {/* Scrollable content area */}
+              <div className={`flex-1 overflow-y-auto pr-2 ${scrollbarClass}`} style={{ maxHeight: 'calc(90vh - 120px)' }}>
+                <div className="space-y-6 py-4">
+                  {/* Enhanced Quick stats with modern cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/30 
+                                  border border-blue-100/50 dark:border-blue-800/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+                      <div className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider">Courses with GPA</div>
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-200 mt-1">{termStats.count}</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-green-50/60 dark:from-emerald-950/40 dark:to-green-950/30 
+                                  border border-emerald-100/50 dark:border-emerald-800/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+                      <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider">Total Credits</div>
+                      <div className="text-2xl font-bold text-emerald-800 dark:text-emerald-200 mt-1">{termStats.credits}</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50/80 to-violet-50/60 dark:from-purple-950/40 dark:to-violet-950/30 
+                                  border border-purple-100/50 dark:border-purple-800/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+                      <div className="text-xs text-purple-600 dark:text-purple-400 font-medium uppercase tracking-wider">Weighted GPA</div>
+                      <div className="text-2xl font-bold text-purple-800 dark:text-purple-200 mt-1">{termStats.weightedDisplay.toFixed(2)}</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/40 dark:to-orange-950/30 
+                                  border border-amber-100/50 dark:border-amber-800/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+                      <div className="text-xs text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider">Average (unweighted)</div>
+                      <div className="text-2xl font-bold text-amber-800 dark:text-amber-200 mt-1">{termStats.avgDisplay.toFixed(2)}</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-50/80 to-sky-50/60 dark:from-cyan-950/40 dark:to-sky-950/30 
+                                  border border-cyan-100/50 dark:border-cyan-800/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+                      <div className="text-xs text-cyan-600 dark:text-cyan-400 font-medium uppercase tracking-wider">Median</div>
+                      <div className="text-2xl font-bold text-cyan-800 dark:text-cyan-200 mt-1">{termStats.medianDisplay.toFixed(2)}</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-50/80 to-pink-50/60 dark:from-rose-950/40 dark:to-pink-950/30 
+                                  border border-rose-100/50 dark:border-rose-800/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+                      <div className="text-xs text-rose-600 dark:text-rose-400 font-medium uppercase tracking-wider">Best / Worst</div>
+                      <div className="text-2xl font-bold text-rose-800 dark:text-rose-200 mt-1">{termStats.bestDisplay.toFixed(2)} / {termStats.worstDisplay.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Enhanced chart section */}
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:from-gray-800/50 dark:to-gray-900/30 
+                                border border-gray-200/50 dark:border-gray-700/30 shadow-lg backdrop-blur-sm">
+                    <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Grade Distribution Chart</h4>
+                    <div className="h-56">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={gradeDist}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="range" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="count" fill={COLORS[2]} radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  
+                  {/* Enhanced courses table */}
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/80 to-gray-50/60 dark:from-gray-800/80 dark:to-gray-900/60 
+                                border border-gray-200/50 dark:border-gray-700/30 shadow-lg backdrop-blur-sm">
+                    <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Course Details</h4>
+                    <div className={`overflow-auto max-h-80 rounded-xl border border-gray-200/50 dark:border-gray-700/30 ${scrollbarClass}`}>
+                      <table className="min-w-full text-sm">
+                        <thead className="sticky top-0 z-10">
+                          <tr className="bg-gradient-to-r from-gray-100/90 to-gray-200/80 dark:from-gray-700/90 dark:to-gray-800/80 text-gray-700 dark:text-gray-300 backdrop-blur-sm">
+                            <th className="text-left p-3 font-semibold tracking-wide">Code</th>
+                            <th className="text-left p-3 font-semibold tracking-wide">Course</th>
+                            <th className="text-left p-3 font-semibold tracking-wide">Credits</th>
+                            <th className="text-left p-3 font-semibold tracking-wide">GPA</th>
                           </tr>
-                        );
-                      })}
-                      {termStats.coursesSorted.length === 0 && (
-                        <tr><td className="p-3 text-muted-foreground" colSpan={4}>No courses with GPA yet.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {termStats.coursesSorted.map((c, index) => {
+                            const g = Math.max(0, Math.min(4, (c.gpa as number)));
+                            const display = gpaScale === '1-highest' ? (5 - g) : g;
+                            return (
+                              <tr key={c.id} className={`border-t border-gray-200/30 dark:border-gray-700/30 
+                                                        hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/20 
+                                                        dark:hover:from-blue-950/20 dark:hover:to-purple-950/10 
+                                                        transition-all duration-200 ${index % 2 === 0 ? 'bg-white/30 dark:bg-gray-800/30' : 'bg-gray-50/30 dark:bg-gray-900/30'}`}>
+                                <td className="p-3 whitespace-nowrap font-medium text-gray-700 dark:text-gray-300">{c.code || '-'}</td>
+                                <td className="p-3 text-gray-800 dark:text-gray-200">{c.name || '-'}</td>
+                                <td className="p-3 text-gray-700 dark:text-gray-300">{Number(c.credits) || 0}</td>
+                                <td className="p-3 font-bold text-blue-600 dark:text-blue-400">{display.toFixed(2)}</td>
+                              </tr>
+                            );
+                          })}
+                          {termStats.coursesSorted.length === 0 && (
+                            <tr><td className="p-4 text-gray-500 dark:text-gray-400 text-center italic" colSpan={4}>No courses with GPA yet.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button className="rounded-2xl" variant="outline" onClick={() => setGradesOpen(false)}>Close</Button>
+              
+              <DialogFooter className="flex-shrink-0 pt-6 border-t border-gray-200/30 dark:border-gray-700/30 mt-4">
+                <Button 
+                  variant="outline" 
+                  className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                           backdrop-blur-md hover:from-red-50/90 hover:to-pink-50/80 dark:hover:from-red-950/40 dark:hover:to-pink-950/30 
+                           border-gray-200/60 dark:border-gray-600/40 hover:border-red-200/60 dark:hover:border-red-400/30
+                           shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                           text-gray-700 dark:text-gray-200 hover:text-red-700 dark:hover:text-red-300
+                           font-medium tracking-wide px-6 py-2" 
+                  onClick={() => setGradesOpen(false)}
+                >
+                  <span className="relative z-10">Close</span>
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -1008,19 +1422,29 @@ export default function AcademicQuestDashboard() {
                 desc="Program map by SY & term, courses, sections, units, GPA."
                 cta="Open Academic Planner"
                 colors={COLORS}
+                iconType="academic"
                 onClick={
                   navigate
                     ? () => navigate("/planner")
                     : () => (window.location.href = "/planner")
                 }
               />
-              <Feature icon={ClipboardList} title="Task Tracker" desc="Assignments by course with status, due date/time, days‑left, grade + completion chart." cta="Track Tasks" colors={COLORS} onClick={() => navigate("/tasks")} />
+              <Feature 
+                icon={ClipboardList} 
+                title="Task Tracker" 
+                desc="Assignments by course with status, due date/time, days‑left, grade + completion chart." 
+                cta="Track Tasks" 
+                colors={COLORS} 
+                iconType="productivity"
+                onClick={() => navigate("/tasks")} 
+              />
               <Feature 
                 icon={CalendarDays} 
                 title="Schedule Planner" 
                 desc="Sunday–Saturday timetable with focus blocks & time usage." 
                 cta="Plan My Week" 
                 colors={COLORS}
+                iconType="navigation"
                 onClick={
                   navigate
                     ? () => navigate("/schedule")
@@ -1033,11 +1457,36 @@ export default function AcademicQuestDashboard() {
                 desc="Instructor, time, room, syllabus, meetings/week, weighted grading, projects, notes & study plan." 
                 cta="Open Course Planner" 
                 colors={COLORS}
+                iconType="academic"
                 onClick={() => navigate("/courses")}
               />
-              <Feature icon={Wallet} title="Scholarship Tracker" desc="Status, deadlines, days‑left, submitted docs, awards with charts." cta="Track Scholarships"  colors={COLORS} onClick={() => navigate("/scholarships")} />
-              <Feature icon={BookMarked} title="Textbook Tracker" desc="Per‑class texts, publisher, status, purchase & return dates." cta="Log Textbooks" colors={COLORS} onClick={() => navigate("/textbooks")} />
-              <Feature icon={Settings} title="Settings" desc="Themes, notifications, data import/export, grading scales, calendar sync, time format." cta="Open Settings" colors={COLORS} onClick={() => navigate("/settings")} />
+              <Feature 
+                icon={Wallet} 
+                title="Scholarship Tracker" 
+                desc="Status, deadlines, days‑left, submitted docs, awards with charts." 
+                cta="Track Scholarships"  
+                colors={COLORS} 
+                iconType="primary"
+                onClick={() => navigate("/scholarships")} 
+              />
+              <Feature 
+                icon={BookMarked} 
+                title="Textbook Tracker" 
+                desc="Per‑class texts, publisher, status, purchase & return dates." 
+                cta="Log Textbooks" 
+                colors={COLORS} 
+                iconType="feature"
+                onClick={() => navigate("/textbooks")} 
+              />
+              <Feature 
+                icon={Settings} 
+                title="Settings" 
+                desc="Themes, notifications, data import/export, grading scales, calendar sync, time format." 
+                cta="Open Settings" 
+                colors={COLORS} 
+                iconType="navigation"
+                onClick={() => navigate("/settings")} 
+              />
             </div>
           </div>
 
@@ -1053,8 +1502,29 @@ export default function AcademicQuestDashboard() {
                     </p>
                   </div>
                   <div className="flex gap-3">
-                    <Button className="rounded-2xl" onClick={() => { setGamificationTab('quests'); setGamificationOpen(true); }}>Start Daily Quest</Button>
-                    <Button variant="outline" className="rounded-2xl" onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}>View Badges</Button>
+                    <Button 
+                      className="rounded-2xl bg-gradient-to-r from-purple-600/90 to-violet-600/90 dark:from-purple-500/90 dark:to-violet-500/90
+                                hover:from-purple-700/95 hover:to-violet-700/95 dark:hover:from-purple-400/95 dark:hover:to-violet-400/95
+                                text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                font-medium tracking-wide backdrop-blur-md
+                                ring-2 ring-purple-200/50 dark:ring-purple-400/30 hover:ring-purple-300/60 dark:hover:ring-purple-300/40"
+                      onClick={() => { setGamificationTab('quests'); setGamificationOpen(true); }}
+                    >
+                      Start Daily Quest
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                               backdrop-blur-md hover:from-purple-50/90 hover:to-violet-50/80 dark:hover:from-purple-950/40 dark:hover:to-violet-950/30 
+                               border-gray-200/60 dark:border-gray-600/40 hover:border-purple-200/60 dark:hover:border-violet-400/30
+                               shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                               text-gray-700 dark:text-gray-200 hover:text-purple-700 dark:hover:text-violet-300
+                               font-medium tracking-wide"
+                      onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}
+                    >
+                      <span>View Badges</span>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -1065,45 +1535,164 @@ export default function AcademicQuestDashboard() {
           <div className="flex flex-wrap gap-3 items-center justify-between mt-8 pb-6">
             <p className="text-xs text-neutral-500">Tip: Import syllabi or connect a calendar to auto‑create tasks & classes.</p>
             <div className="flex gap-3">
-              <Button variant="outline" className="rounded-2xl">Import Syllabus</Button>
-              <Button className="rounded-2xl" onClick={() => navigate("/courses")}>Add Course</Button>
+              <Button 
+                variant="outline" 
+                className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                         backdrop-blur-md hover:from-cyan-50/90 hover:to-sky-50/80 dark:hover:from-cyan-950/40 dark:hover:to-sky-950/30 
+                         border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-sky-400/30
+                         shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                         text-gray-700 dark:text-gray-200 hover:text-cyan-700 dark:hover:text-sky-300
+                         font-medium tracking-wide"
+              >
+                <span>Import Syllabus</span>
+              </Button>
+              <Button 
+                className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90
+                          hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                          text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                          hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                          font-medium tracking-wide backdrop-blur-md
+                          ring-2 ring-green-200/50 dark:ring-green-400/30 hover:ring-green-300/60 dark:hover:ring-green-300/40"
+                onClick={() => navigate("/planner")}
+              >
+                Add Course
+              </Button>
             </div>
           </div>
         </div>
 
           {/* Quick Add Task dialog */}
           <Dialog open={quickOpen} onOpenChange={setQuickOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Quick Add Task</DialogTitle>
+            <DialogContent className="max-w-lg border-0 shadow-2xl rounded-3xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 
+                                    dark:from-neutral-900/95 dark:via-neutral-900/90 dark:to-neutral-800/85 backdrop-blur-md
+                                    ring-1 ring-white/20 dark:ring-white/10">
+              <DialogHeader className="pb-4 border-b border-gray-200/30 dark:border-gray-700/30">
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 
+                                      dark:from-blue-400 dark:via-purple-400 dark:to-blue-300 bg-clip-text text-transparent
+                                      flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/30 
+                                border border-blue-100/50 dark:border-blue-800/30 shadow-lg">
+                    <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  Quick Add Task
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-neutral-600">Title</label>
-                  <Input value={qTitle} onChange={(e) => setQTitle(e.target.value)} placeholder="e.g., OS Lab Report" />
+              
+              <div className="space-y-5 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></span>
+                    Task Title
+                  </label>
+                  <Input 
+                    value={qTitle} 
+                    onChange={(e) => setQTitle(e.target.value)} 
+                    placeholder="e.g., OS Lab Report, Assignment 3, Project Submission..." 
+                    className="rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                             bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                             backdrop-blur-md focus:border-blue-400/60 dark:focus:border-purple-400/60
+                             focus:ring-4 focus:ring-blue-100/50 dark:focus:ring-purple-900/30
+                             transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                             text-gray-800 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400
+                             h-11 px-4"
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-neutral-600">Due date</label>
-                    <Input type="date" value={qDate} onChange={(e) => setQDate(e.target.value)} />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"></span>
+                      Due Date
+                    </label>
+                    <Input 
+                      type="date" 
+                      value={qDate} 
+                      onChange={(e) => setQDate(e.target.value)} 
+                      className="rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                               bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                               backdrop-blur-md focus:border-emerald-400/60 dark:focus:border-teal-400/60
+                               focus:ring-4 focus:ring-emerald-100/50 dark:focus:ring-teal-900/30
+                               transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                               text-gray-800 dark:text-gray-200 h-11 px-4"
+                    />
                   </div>
-                  <div>
-                    <label className="text-xs text-neutral-600">Due time</label>
-                    <Input type="time" value={qTime} onChange={(e) => setQTime(e.target.value)} />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"></span>
+                      Due Time
+                    </label>
+                    <Input 
+                      type="time" 
+                      value={qTime} 
+                      onChange={(e) => setQTime(e.target.value)} 
+                      className="rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                               bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                               backdrop-blur-md focus:border-amber-400/60 dark:focus:border-orange-400/60
+                               focus:ring-4 focus:ring-amber-100/50 dark:focus:ring-orange-900/30
+                               transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                               text-gray-800 dark:text-gray-200 h-11 px-4"
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-neutral-600">Status</label>
-                  <select className="mt-1 h-9 w-full rounded-xl border border-black/10 bg-white dark:bg-neutral-900 px-3" value={qStatus} onChange={(e)=> setQStatus(e.target.value as "Not Started"|"In Progress"|"Completed")}>
-                    <option>Not Started</option>
-                    <option>In Progress</option>
-                    <option>Completed</option>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"></span>
+                    Status
+                  </label>
+                  <select 
+                    className="w-full h-11 px-4 rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                             bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                             backdrop-blur-md focus:border-purple-400/60 dark:focus:border-pink-400/60
+                             focus:ring-4 focus:ring-purple-100/50 dark:focus:ring-pink-900/30
+                             transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                             text-gray-800 dark:text-gray-200 cursor-pointer
+                             focus:outline-none appearance-none"
+                    value={qStatus} 
+                    onChange={(e)=> setQStatus(e.target.value as "Not Started"|"In Progress"|"Completed")}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem'
+                    }}
+                  >
+                    <option value="Not Started">🔄 Not Started</option>
+                    <option value="In Progress">⚡ In Progress</option>
+                    <option value="Completed">✅ Completed</option>
                   </select>
                 </div>
               </div>
-              <DialogFooter className="mt-3">
-                <Button variant="outline" onClick={() => setQuickOpen(false)}>Cancel</Button>
-                <Button onClick={commitQuickTask}>Add Task</Button>
+              
+              <DialogFooter className="pt-6 border-t border-gray-200/30 dark:border-gray-700/30 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                           backdrop-blur-md hover:from-red-50/90 hover:to-pink-50/80 dark:hover:from-red-950/40 dark:hover:to-pink-950/30 
+                           border-gray-200/60 dark:border-gray-600/40 hover:border-red-200/60 dark:hover:border-red-400/30
+                           shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                           text-gray-700 dark:text-gray-200 hover:text-red-700 dark:hover:text-red-300
+                           font-medium tracking-wide px-6 py-2 flex-1" 
+                  onClick={() => setQuickOpen(false)}
+                >
+                  <span className="relative z-10">Cancel</span>
+                </Button>
+                <Button 
+                  className="rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 
+                           dark:from-blue-500 dark:via-purple-500 dark:to-blue-600
+                           hover:from-blue-700 hover:via-purple-700 hover:to-blue-800
+                           dark:hover:from-blue-600 dark:hover:via-purple-600 dark:hover:to-blue-700
+                           shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                           text-white font-medium tracking-wide px-6 py-2 flex-1
+                           border-0 ring-2 ring-blue-200/50 dark:ring-purple-400/30"
+                  onClick={commitQuickTask}
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span>Add Task</span>
+                    <span className="text-lg">✨</span>
+                  </span>
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
