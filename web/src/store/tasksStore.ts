@@ -25,11 +25,24 @@ type TasksState = {
 
 export const useTasksStore = create<TasksState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       tasks: [],
       addTask: (t) => set((s) => ({ tasks: [...s.tasks, t] })),
-      updateTask: (id, patch) =>
-        set((s) => ({ tasks: s.tasks.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      updateTask: (id, patch) => {
+        const task = get().tasks.find(t => t.id === id)
+        const wasCompleted = task?.status === "Completed"
+        const isNowCompleted = patch.status === "Completed"
+        
+        // If task is being completed for the first time, reward XP
+        if (!wasCompleted && isNowCompleted && task) {
+          // Import gamification helpers dynamically to avoid circular dependencies
+          import('./gamificationHelpers').then(({ rewardTaskCompletion }) => {
+            rewardTaskCompletion(task.dueDate)
+          })
+        }
+        
+        set((s) => ({ tasks: s.tasks.map((x) => (x.id === id ? { ...x, ...patch } : x)) }))
+      },
       removeTask: (id) => set((s) => ({ tasks: s.tasks.filter((x) => x.id !== id) })),
       clearTerm: (yearId, termId) =>
         set((s) => ({ tasks: s.tasks.filter((x) => !(x.yearId === yearId && x.termId === termId)) })),

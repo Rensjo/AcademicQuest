@@ -27,7 +27,15 @@ export const useStudySessions = create<StudyState>()(
   persist(
     (set) => ({
       sessions: [],
-      add: (s) => set((st) => ({ sessions: [s, ...st.sessions] })),
+      add: (s) => {
+        // Reward XP for study session
+        if (s.durationMin > 0) {
+          import('./gamificationHelpers').then(({ rewardStudySession }) => {
+            rewardStudySession(s.durationMin)
+          })
+        }
+        set((st) => ({ sessions: [s, ...st.sessions] }))
+      },
       update: (id, patch) => set((st) => ({
         sessions: st.sessions.map((s) => (s.id === id ? { ...s, ...patch } : s)),
       })),

@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme, PALETTES } from '@/store/theme'
-import { useAQ } from '@/store/aqStore'
 import { useSchedule } from "@/store/scheduleStore";
 import { useSettings } from "@/store/settingsStore";
 import { useAcademicPlan } from "@/store/academicPlanStore";
@@ -50,14 +49,30 @@ import {
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue
 } from "@/components/ui/select";
+import { StudyHoursPanel } from "@/components/StudyHoursPanel";
+import { GamificationPanel } from "@/components/GamificationPanel";
+import { AttendanceWidget } from "@/components/AttendanceWidget";
+import { useGamification } from "@/store/gamificationStore";
 
-// ----------------------------------------------------------------
 // Academic Quest — Interactive Dashboard Landing Page
 // Bright, customizable, gamified, with animations.
 // This file focuses ONLY on the dashboard landing; other tabs
 // (Planner, Task Tracker, Schedule, Course Planner, Calculators,
 // GPA, Scholarships, Textbooks, Settings) will live in separate files.
 // ----------------------------------------------------------------
+
+/** CSS-only scrollbar skins (light/dark) for horizontal term scrollers. */
+const scrollbarStyles = `
+  .light-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+  .light-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 5px; }
+  .light-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.20); border-radius: 5px; }
+  .light-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.30); }
+
+  .dark-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+  .dark-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.10); border-radius: 5px; }
+  .dark-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 5px; }
+  .dark-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
+`;
 
 // Mock data (swap with real state later)
 const mock = {
@@ -226,6 +241,9 @@ export default function AcademicQuestDashboard() {
   // User customizations (persisted to localStorage)
   const [compact, setCompact] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
+  const [studyHoursOpen, setStudyHoursOpen] = useState(false);
+  const [gamificationOpen, setGamificationOpen] = useState(false);
+  const [gamificationTab, setGamificationTab] = useState<'status' | 'badges' | 'quests'>('status');
 
   useEffect(() => {
     const saved = localStorage.getItem("aq:settings");
@@ -244,8 +262,8 @@ export default function AcademicQuestDashboard() {
 
   // Store-driven theme hooks
   const theme = useTheme();
-  const aq = useAQ();
   const COLORS = useColors();
+  const gamification = useGamification();
   const years = useAcademicPlan((s) => s.years);
   const selectedYearId = useAcademicPlan((s) => s.selectedYearId);
   const setSelectedYear = useAcademicPlan((s) => s.setSelectedYear);
@@ -254,6 +272,27 @@ export default function AcademicQuestDashboard() {
   const addTask = useTasksStore((s) => s.addTask);
   const updateTask = useTasksStore((s) => s.updateTask);
   const studySessions = useStudySessions((s) => s.sessions);
+
+  // Initialize gamification once on mount
+  useEffect(() => {
+    // Use setTimeout to avoid the infinite loop during initialization
+    const timer = setTimeout(() => {
+      gamification.generateDailyQuests()
+      gamification.checkAchievements()
+      
+      // Reward daily login
+      const today = new Date().toISOString().split('T')[0]
+      const lastActive = gamification.stats.lastActiveDate
+      
+      if (lastActive !== today) {
+        gamification.addXP(10) // Daily login bonus
+        gamification.incrementStreak()
+      }
+    }, 100)
+    
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency array - only run once on mount
 
   // derive active year/term for quick-add defaults
   const activeYear = React.useMemo(() => {
@@ -439,6 +478,15 @@ export default function AcademicQuestDashboard() {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const dark = theme.mode === 'dark' || (theme.mode === 'system' && prefersDark);
       document.documentElement.classList.toggle('dark', dark);
+      
+      // Inject scrollbar styles
+      let styleElement = document.getElementById('aq-scrollbar-styles') as HTMLStyleElement;
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = 'aq-scrollbar-styles';
+        document.head.appendChild(styleElement);
+      }
+      styleElement.textContent = scrollbarStyles;
   }, [theme.font, theme.mode]);
 
   // Background style from local accent + palette
@@ -480,11 +528,16 @@ export default function AcademicQuestDashboard() {
           }).format(new Date()),
       []
       );
-      const xpPct = Math.min(100, Math.round((aq.kpis.xp / aq.kpis.nextLevelXp) * 100));
+      const xpPct = Math.min(100, Math.round(((gamification.stats.xp % 500) / 500) * 100));
+
+      // Get scrollbar class based on theme
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = theme.mode === 'dark' || (theme.mode === 'system' && systemDark);
+      const scrollbarClass = isDark ? 'dark-scrollbar' : 'light-scrollbar';
 
     return (
           <div
-              className="min-h-screen w-full overflow-x-hidden"
+              className={`min-h-screen w-full overflow-x-hidden ${scrollbarClass}`}
               style={bgStyle}
           >
         <div className={`w-full px-4 sm:px-6 lg:px-12 ${compact ? "py-4" : "py-8"}`}>
@@ -544,7 +597,7 @@ export default function AcademicQuestDashboard() {
                       </div>
                       <div className="flex items-center gap-2">
                           <Star className="h-4 w-4" />
-                          <span className="text-sm font-semibold">Lvl {aq.kpis.level}</span>
+                          <span className="text-sm font-semibold">Lvl {gamification.stats.level}</span>
                       </div>
                   </div>
                   <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Adventurer Status</p>
@@ -558,12 +611,12 @@ export default function AcademicQuestDashboard() {
                     />
                   </div>
                   <div className="flex items-center justify-between mt-2 text-sm text-neutral-600">
-                      <span>{aq.kpis.xp} / {aq.kpis.nextLevelXp} XP</span>
-                      <span>🔥 Streak: {aq.kpis.streakDays}d</span>
+                      <span>{gamification.stats.xp % 500} / 500 XP</span>
+                      <span>🔥 Streak: {gamification.stats.streakDays}d</span>
                   </div>
                   <div className="mt-3 flex gap-2">
-                      <Button size="sm" className="rounded-2xl">Start 7‑Day Quest</Button>
-                      <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => setShowBadges(true)}>View Badges</Button>
+                      <Button size="sm" className="rounded-2xl" onClick={() => { setGamificationTab('status'); setGamificationOpen(true); }}>Status</Button>
+                      <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}>View Badges</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -795,7 +848,7 @@ export default function AcademicQuestDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Study Hours (7‑day)</h3>
-                    <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0">Details</Button>
+                    <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0" onClick={() => setStudyHoursOpen(true)}>Details</Button>
                   </div>
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
@@ -810,6 +863,9 @@ export default function AcademicQuestDashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Class Attendance Widget */}
+              <AttendanceWidget />
             </div>
 
             <div className="space-y-6">
@@ -906,7 +962,7 @@ export default function AcademicQuestDashboard() {
                   </ResponsiveContainer>
                 </div>
                 {/* Courses table */}
-                <div className="overflow-auto rounded-2xl border border-black/10 dark:border-white/10">
+                <div className={`overflow-auto rounded-2xl border border-black/10 dark:border-white/10 ${scrollbarClass}`}>
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="bg-neutral-50/70 dark:bg-neutral-800/60 text-muted-foreground">
@@ -997,8 +1053,8 @@ export default function AcademicQuestDashboard() {
                     </p>
                   </div>
                   <div className="flex gap-3">
-                    <Button className="rounded-2xl">Start Daily Quest</Button>
-                    <Button variant="outline" className="rounded-2xl" onClick={() => setShowBadges(true)}>View Badges</Button>
+                    <Button className="rounded-2xl" onClick={() => { setGamificationTab('quests'); setGamificationOpen(true); }}>Start Daily Quest</Button>
+                    <Button variant="outline" className="rounded-2xl" onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}>View Badges</Button>
                   </div>
                 </div>
               </CardContent>
@@ -1095,6 +1151,19 @@ export default function AcademicQuestDashboard() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Study Hours Panel */}
+        <StudyHoursPanel 
+          isOpen={studyHoursOpen} 
+          onClose={() => setStudyHoursOpen(false)} 
+        />
+
+        {/* Gamification Panel */}
+        <GamificationPanel 
+          isOpen={gamificationOpen} 
+          onClose={() => setGamificationOpen(false)}
+          defaultTab={gamificationTab}
+        />
       </div>
     );
   }

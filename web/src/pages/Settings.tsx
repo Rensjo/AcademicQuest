@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import TopTabsInline from '@/components/TopTabsInline'
 import useThemedGradient from '@/hooks/useThemedGradient'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Trophy, Zap, RotateCcw, Trash2, Download, Upload } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import Slider from '@/components/ui/slider'
 import { useTheme, PALETTES, type Palette, type Mode } from '@/store/theme'
 import { useSettings, type DefaultRoute, type CurrencyCode, type GPAScale, type PomodoroPosition, type PomodoroSize } from '@/store/settingsStore'
+import { useGamification } from '@/store/gamificationStore'
 // stores imported in backup via localStorage keys; direct hooks not needed here
 
 const scrollbarStyles = `
@@ -27,6 +28,8 @@ export default function Settings() {
 	const bgStyle = useThemedGradient()
 	const theme = useTheme()
 	const settings = useSettings()
+	const gamification = useGamification()
+	const [gamificationPanelOpen, setGamificationPanelOpen] = useState(false)
 
 	function scrollTo(id: string) {
 		const el = document.getElementById(id)
@@ -43,6 +46,8 @@ export default function Settings() {
 			tasks: localStorage.getItem('aq:tasks'),
 			scholarships: localStorage.getItem('aq:scholarships'),
 			textbooks: localStorage.getItem('aq:textbooks'),
+			studySessions: localStorage.getItem('aq:study-sessions'),
+			gamification: localStorage.getItem('aq:gamification'),
 		}
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
 		const url = URL.createObjectURL(blob)
@@ -70,12 +75,40 @@ export default function Settings() {
 				if (obj.tasks) localStorage.setItem('aq:tasks', obj.tasks)
 				if (obj.scholarships) localStorage.setItem('aq:scholarships', obj.scholarships)
 				if (obj.textbooks) localStorage.setItem('aq:textbooks', obj.textbooks)
+				if (obj.studySessions) localStorage.setItem('aq:study-sessions', obj.studySessions)
+				if (obj.gamification) localStorage.setItem('aq:gamification', obj.gamification)
 				window.location.reload()
 			} catch {
 				alert('Invalid backup file')
 			}
 		}
 		input.click()
+	}
+
+	// Gamification reset functions
+	const resetGamificationData = () => {
+		if (confirm('Are you sure you want to reset all gamification data? This will clear your level, XP, badges, and streaks. This action cannot be undone.')) {
+			localStorage.removeItem('aq:gamification')
+			window.location.reload()
+		}
+	}
+
+	const resetStreaks = () => {
+		if (confirm('Are you sure you want to reset your streaks? This will set your current and longest streaks to 0.')) {
+			gamification.updateStats({ 
+				streakDays: 0, 
+				longestStreak: 0 
+			})
+		}
+	}
+
+	const clearAllData = () => {
+		if (confirm('Are you sure you want to clear ALL data? This will reset everything including settings, academic plans, tasks, and gamification progress. This action cannot be undone.')) {
+			// Clear all localStorage data
+			const keys = Object.keys(localStorage).filter(key => key.startsWith('aq:'))
+			keys.forEach(key => localStorage.removeItem(key))
+			window.location.reload()
+		}
 	}
 
 	return (
@@ -300,29 +333,90 @@ export default function Settings() {
 
 							<Card id="gamification" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
 								<CardContent className="p-4 space-y-4">
-								<div className="text-sm font-semibold">Gamification</div>
+								<div className="text-sm font-semibold flex items-center">
+									<Trophy className="mr-2 text-yellow-500" size={16} />
+									Gamification System
+								</div>
+								
+								{/* Quick Stats */}
+								<div className="grid grid-cols-4 gap-3 text-xs border rounded-lg p-3 bg-muted/30">
+									<div className="text-center">
+										<div className="text-muted-foreground">Level</div>
+										<div className="font-medium">{Math.floor(gamification.stats.totalXp / 500) + 1}</div>
+									</div>
+									<div className="text-center">
+										<div className="text-muted-foreground">XP</div>
+										<div className="font-medium">{gamification.stats.totalXp}</div>
+									</div>
+									<div className="text-center">
+										<div className="text-muted-foreground">Badges</div>
+										<div className="font-medium">{gamification.stats.badges.length}</div>
+									</div>
+									<div className="text-center">
+										<div className="text-muted-foreground">Streak</div>
+										<div className="font-medium">{gamification.stats.streakDays}</div>
+									</div>
+								</div>
+
+								{/* Settings */}
 								<div className="grid grid-cols-2 gap-3 items-center">
 									<label className="text-sm">Enable gamification</label>
 									<Switch checked={settings.gamificationEnabled} onCheckedChange={(b)=>settings.set({ gamificationEnabled: b })} />
+
+									<label className="text-sm">Show panel</label>
+									<Switch checked={gamificationPanelOpen} onCheckedChange={setGamificationPanelOpen} />
 
 									<label className="text-sm">Show streaks</label>
 									<Switch checked={settings.showStreaks} onCheckedChange={(b)=>settings.set({ showStreaks: b })} />
 
 									<label className="text-sm">Achievements</label>
 									<Switch checked={settings.achievements} onCheckedChange={(b)=>settings.set({ achievements: b })} />
+								</div>
 
-									<label className="text-sm">Challenges</label>
-									<Switch checked={settings.challenges} onCheckedChange={(b)=>settings.set({ challenges: b })} />
+								{/* Action Buttons */}
+								<div className="space-y-2 pt-2 border-t">
+									<Button 
+										onClick={resetStreaks} 
+										variant="outline" 
+										size="sm" 
+										className="w-full text-left justify-start"
+									>
+										<Zap className="mr-2 text-blue-500" size={14} />
+										Reset Streaks
+									</Button>
+									<Button 
+										onClick={resetGamificationData} 
+										variant="destructive" 
+										size="sm" 
+										className="w-full text-left justify-start"
+									>
+										<RotateCcw className="mr-2" size={14} />
+										Reset All Progress
+									</Button>
 								</div>
 								</CardContent>
 							</Card>
 
 							<Card id="data" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
 								<CardContent className="p-4 space-y-4">
-									<div className="text-sm font-semibold">Data</div>
-									<div className="text-xs text-muted-foreground">Use the Import button at the top-right. You can export your data below. This backs up settings, theme, academic plan, schedule, tasks, scholarships, and textbooks as JSON.</div>
-									<div className="flex justify-end">
-										<Button variant="secondary" className="rounded-xl" onClick={exportData}>Export backup</Button>
+									<div className="text-sm font-semibold flex items-center">
+										<Download className="mr-2 text-blue-500" size={16} />
+										Data Management
+									</div>
+									<div className="text-xs text-muted-foreground">Export backs up all your data including settings, theme, academic plan, schedule, tasks, scholarships, textbooks, study sessions, and gamification progress as JSON.</div>
+									<div className="flex gap-2">
+										<Button variant="outline" size="sm" className="flex-1" onClick={exportData}>
+											<Download size={14} className="mr-2" />
+											Export
+										</Button>
+										<Button variant="outline" size="sm" className="flex-1" onClick={importData}>
+											<Upload size={14} className="mr-2" />
+											Import
+										</Button>
+										<Button variant="destructive" size="sm" className="flex-1" onClick={clearAllData}>
+											<Trash2 size={14} className="mr-2" />
+											Clear All
+										</Button>
 									</div>
 								</CardContent>
 							</Card>
