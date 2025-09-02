@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware'
 
 export type DefaultRoute = '/' | '/planner' | '/tasks' | '/schedule' | '/course-planner' | '/scholarships' | '/textbooks' | '/settings'
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'INR' | 'CNY' | 'KRW' | 'NGN' | 'ZAR' | 'PHP'
+export type GPAScale = '4-highest' | '1-highest'
+export type PomodoroPosition = 'tl' | 'tr' | 'bl' | 'br' | 'draggable'
+export type PomodoroSize = 'small' | 'medium' | 'large'
 
 type ChartAnim = 'normal' | 'fast' | 'off'
 
@@ -27,6 +30,7 @@ type SettingsState = {
 
   // formatting
   preferredCurrency: CurrencyCode
+  gpaScale: GPAScale
 
   gamificationEnabled: boolean
   showStreaks: boolean
@@ -36,6 +40,11 @@ type SettingsState = {
   // textbook defaults
   textbookDefaultStatus: 'Ordered' | 'Shipped' | 'Received' | 'Returned' | 'Digital'
   textbookDefaultLinkMode: 'url' | 'file'
+
+  // pomodoro settings
+  pomodoroPosition: PomodoroPosition
+  pomodoroSize: PomodoroSize
+  pomodoroAutoHide: boolean
 
   // actions
   set: (p: Partial<SettingsState>) => void
@@ -63,6 +72,7 @@ export const useSettings = create<SettingsState>()(
       quietEnd: '07:00',
 
   preferredCurrency: 'USD',
+  gpaScale: '4-highest',
 
       gamificationEnabled: false,
       showStreaks: true,
@@ -71,6 +81,11 @@ export const useSettings = create<SettingsState>()(
 
       textbookDefaultStatus: 'Ordered',
       textbookDefaultLinkMode: 'file',
+
+      // pomodoro defaults
+      pomodoroPosition: 'draggable',
+      pomodoroSize: 'medium',
+      pomodoroAutoHide: false,
 
       set: (p) => set(p),
     }),

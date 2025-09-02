@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme, PALETTES } from '@/store/theme';
+import PomodoroFloat from '@/components/PomodoroFloat';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
@@ -88,7 +89,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Bottom glow overlay (non-interactive) */}
       <div aria-hidden style={bottomGlowStyle} />
       {/* Ensure content paints above the glow */}
-      <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+  <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+  {/* Floating Pomodoro button (draggable, corner-snapping) */}
+  <PomodoroFloat />
     </>
   );
 }

@@ -848,7 +848,7 @@ export default function SchedulePlanner() {
           
           <div className="mt-4 pb-8">
             <Button
-              className="w-full h-16 rounded-2xl border border-black/10 dark:border-white/10 
+              className="w-full h-24 rounded-2xl border border-black/10 dark:border-white/10 
                         bg-white/70 dark:bg-neutral-900/60 hover:bg-white/80 
                         dark:hover:bg-neutral-800/60 transition text-muted-foreground font-semibold"              onClick={() => {
                 const newLabel = getNextYearLabel();

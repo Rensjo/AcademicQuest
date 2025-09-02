@@ -1,7 +1,7 @@
 import React from 'react'
 import TopTabsInline from '@/components/TopTabsInline'
 import useThemedGradient from '@/hooks/useThemedGradient'
-import { CalendarDays, Plus, Link as LinkIcon } from 'lucide-react'
+import { CalendarDays, Plus, Link as LinkIcon, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,8 @@ import { useTheme, PALETTES } from '@/store/theme'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { saveToOPFS, getOPFSFileURL } from '@/lib/opfs'
 import { useSettings } from '@/store/settingsStore'
+import { useScholarships } from '@/store/scholarshipsStore'
+import type { Row, Status } from '@/store/scholarshipsStore'
 
 const scrollbarStyles = `
 	.light-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -28,54 +30,21 @@ export default function Scholarships() {
 	const COLORS = PALETTES[theme.palette]
 	const settings = useSettings()
 
-	// Data model for scholarships
-	type Status = 'Received' | 'Applied' | 'In-Progress' | 'Rejected' | 'Not Started'
-	type Row = {
-		id: string
-		status: Status
-		name: string
-		location: string
-		dueDate?: string
-		daysLeft?: number // derived
-		submittedDate?: string
-		resume: boolean
-		essay: boolean
-		otherDocs: boolean
-		// OPFS paths for attachments
-		resumePath?: string
-		essayPath?: string
-		otherDocsPaths?: string[]
-		amountAwarded?: number
-	}
-
-	function createRow(): Row {
-		return {
-			id: crypto.randomUUID(),
-			status: 'Not Started',
-			name: '',
-			location: '',
-			dueDate: '',
-			submittedDate: '',
-			resume: false,
-			essay: false,
-			otherDocs: false,
-			otherDocsPaths: [],
-			amountAwarded: undefined,
-		}
-	}
-
-	const [rows, setRows] = React.useState<Row[]>(() => Array.from({ length: 8 }, () => createRow()))
+	const rows = useScholarships(s => s.rows)
+	const addRowStore = useScholarships(s => s.addRow)
+	const updateRowStore = useScholarships(s => s.updateRow)
+	const removeRow = useScholarships(s => s.removeRow)
 
 	function setRow(id: string, patch: Partial<Row>) {
-		setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+		updateRowStore(id, patch)
 	}
 
 	function addRow() {
-		setRows((prev) => [...prev, createRow()])
+		addRowStore()
 	}
 
 	// Attachment helpers
-	type AttachKind = 'resume' | 'essay' | 'otherDocs'
+		type AttachKind = 'resume' | 'essay' | 'otherDocs'
 	async function attachFile(id: string, kind: AttachKind) {
 		return new Promise<void>((resolve) => {
 			const input = document.createElement('input')
@@ -92,17 +61,14 @@ export default function Scholarships() {
 					const res = await saveToOPFS(path, f)
 					if (res.ok) savedPaths.push(path)
 				}
-				setRows(prev => prev.map(r => {
-					if (r.id !== id) return r
-					const update: Partial<Row> = { }
+				const r = rows.find(x => x.id === id)
+				if (r) {
+					const update: Partial<Row> = {}
 					if (kind === 'resume') { update.resume = true; update.resumePath = savedPaths[0] }
 					if (kind === 'essay') { update.essay = true; update.essayPath = savedPaths[0] }
-					if (kind === 'otherDocs') {
-						update.otherDocs = true;
-						update.otherDocsPaths = [ ...(r.otherDocsPaths ?? []), ...savedPaths ]
-					}
-					return { ...r, ...update }
-				}))
+					if (kind === 'otherDocs') { update.otherDocs = true; update.otherDocsPaths = [ ...(r.otherDocsPaths ?? []), ...savedPaths ] }
+					updateRowStore(id, update)
+				}
 				resolve()
 			}
 			// trigger
@@ -146,7 +112,7 @@ export default function Scholarships() {
 			'Rejected': 0,
 			'Not Started': 0,
 		}
-		for (const r of rows) base[r.status]++
+		for (const r of rows) base[r.status as keyof typeof base]++
 		return base
 	}, [rows])
 
@@ -205,6 +171,7 @@ export default function Scholarships() {
 							<table className="w-full text-sm">
 								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40">
 									<tr className="text-left">
+										<th className="p-3 w-[50px]"></th>
 										<th className="p-3 w-[170px]">Status</th>
 										<th className="p-3 w-[260px]">Scholarship Name</th>
 										<th className="p-3 w-[180px]">Location</th>
@@ -220,6 +187,17 @@ export default function Scholarships() {
 								<tbody>
 									{rows.map((r) => (
 										<tr key={r.id} className="border-t border-black/5 dark:border-white/10">
+											<td className="p-2">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-black/10 text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:text-neutral-300 dark:hover:text-red-400 dark:hover:bg-red-950/30"
+													aria-label="Delete row"
+													onClick={() => removeRow(r.id)}
+												>
+													<Trash2 className="h-4 w-4 bg-white/80 dark:bg-neutral-900/60 border-black/10" />
+												</Button>
+											</td>
 											<td className="p-2">
 												<Select value={r.status} onValueChange={(v) => setRow(r.id, { status: v as Status })}>
 													<SelectTrigger className="h-8 text-left"><SelectValue placeholder="Status"/></SelectTrigger>

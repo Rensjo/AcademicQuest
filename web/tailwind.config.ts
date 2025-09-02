@@ -7,9 +7,12 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+  lg: 'var(--radius)',
+  md: 'calc(var(--radius) - 2px)',
+  sm: 'calc(var(--radius) - 4px)',
+  xl: 'calc(var(--radius) + 0.25rem)',
+  '2xl': 'calc(var(--radius) + 0.5rem)',
+  '3xl': 'calc(var(--radius) + 0.75rem)'
       },
       colors: {
         background: 'hsl(var(--background))',

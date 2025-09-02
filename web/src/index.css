@@ -37,6 +37,13 @@ body {
   min-height: 100vh;
 }
 
+/* Respect "reduce-motion" class set on html for users toggling Reduced Motion in Settings */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

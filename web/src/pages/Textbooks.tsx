@@ -1,7 +1,7 @@
 import React from 'react'
 import TopTabsInline from '@/components/TopTabsInline'
 import useThemedGradient from '@/hooks/useThemedGradient'
-import { CalendarDays, Link as LinkIcon, Plus } from 'lucide-react'
+import { CalendarDays, Link as LinkIcon, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,8 @@ import { useAcademicPlan } from '@/store/academicPlanStore'
 import { useTheme, PALETTES } from '@/store/theme'
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from 'recharts'
 import { saveToOPFS, getOPFSFileURL } from '@/lib/opfs'
+import { useTextbooks } from '@/store/textbooksStore'
+import type { Row, TBStatus } from '@/store/textbooksStore'
 
 const scrollbarStyles = `
 	.light-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -28,18 +30,7 @@ export default function Textbooks() {
 	const COLORS = PALETTES[theme.palette]
 	const plan = useAcademicPlan()
 
-	type TBStatus = 'Ordered' | 'Shipped' | 'Received' | 'Returned' | 'Digital'
-	type Row = {
-		id: string
-		classLabel: string
-		title: string
-		company: string
-		status: TBStatus
-		purchasedOn?: string
-		returnBy?: string
-		linkUrl?: string // for Digital
-		filePath?: string // for physical/digital file
-	}
+	// types moved to store
 
 	// Build a unique, sorted list of courses across all years/terms
 	const classOptions = React.useMemo(() => {
@@ -55,25 +46,16 @@ export default function Textbooks() {
 		return Array.from(set).sort((a, b) => a.localeCompare(b))
 	}, [plan.years])
 
-	function mkRow(): Row {
-		return {
-			id: crypto.randomUUID(),
-			classLabel: classOptions[0] || '',
-			title: '',
-			company: '',
-			status: 'Ordered',
-			purchasedOn: '',
-			returnBy: '',
-			linkUrl: undefined,
-			filePath: undefined,
-		}
-	}
+	const rows = useTextbooks(s => s.rows)
+	const addRowStore = useTextbooks(s => s.addRow)
+	const updateRow = useTextbooks(s => s.updateRow)
+	const removeRow = useTextbooks(s => s.removeRow)
 
-	const [rows, setRows] = React.useState<Row[]>(() => Array.from({ length: 8 }, () => mkRow()))
-	function setRow(id: string, patch: Partial<Row>) {
-		setRows(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r))
+	function setRow(id: string, patch: Partial<Row>) { updateRow(id, patch) }
+	function addRow() {
+		const id = addRowStore()
+		if (classOptions.length) updateRow(id, { classLabel: classOptions[0] })
 	}
-	function addRow() { setRows(prev => [...prev, mkRow()]) }
 
 	async function attachOrOpen(row: Row) {
 		if (row.status === 'Digital') {
@@ -164,6 +146,7 @@ export default function Textbooks() {
 							<table className="w-full text-sm">
 								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40">
 									<tr className="text-left">
+										<th className="p-3 w-[50px]"></th>
 										<th className="p-3 w-[220px]">Class</th>
 										<th className="p-3 w-[260px]">Textbook Title</th>
 										<th className="p-3 w-[200px]">Company</th>
@@ -176,6 +159,17 @@ export default function Textbooks() {
 								<tbody>
 									{rows.map(r => (
 										<tr key={r.id} className="border-t border-black/5 dark:border-white/10">
+											<td className="p-2">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-black/10 text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:text-neutral-300 dark:hover:text-red-400 dark:hover:bg-red-950/30"
+													aria-label="Delete row"
+													onClick={() => removeRow(r.id)}
+												>
+													<Trash2 className="h-4 w-4 bg-white/80 dark:bg-neutral-900/60 border-black/10" />
+												</Button>
+											</td>
 											<td className="p-2">
 												<Select value={r.classLabel} onValueChange={(v) => setRow(r.id, { classLabel: v })}>
 													<SelectTrigger className="h-8 text-left"><SelectValue placeholder="Select class"/></SelectTrigger>

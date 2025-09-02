@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import Slider from '@/components/ui/slider'
 import { useTheme, PALETTES, type Palette, type Mode } from '@/store/theme'
-import { useSettings, type DefaultRoute, type CurrencyCode } from '@/store/settingsStore'
+import { useSettings, type DefaultRoute, type CurrencyCode, type GPAScale, type PomodoroPosition, type PomodoroSize } from '@/store/settingsStore'
 // stores imported in backup via localStorage keys; direct hooks not needed here
 
 const scrollbarStyles = `
@@ -41,6 +41,8 @@ export default function Settings() {
 			plan: localStorage.getItem('aq:academic-plan'),
 			schedule: localStorage.getItem('aq:schedule'),
 			tasks: localStorage.getItem('aq:tasks'),
+			scholarships: localStorage.getItem('aq:scholarships'),
+			textbooks: localStorage.getItem('aq:textbooks'),
 		}
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
 		const url = URL.createObjectURL(blob)
@@ -66,6 +68,8 @@ export default function Settings() {
 				if (obj.plan) localStorage.setItem('aq:academic-plan', obj.plan)
 				if (obj.schedule) localStorage.setItem('aq:schedule', obj.schedule)
 				if (obj.tasks) localStorage.setItem('aq:tasks', obj.tasks)
+				if (obj.scholarships) localStorage.setItem('aq:scholarships', obj.scholarships)
+				if (obj.textbooks) localStorage.setItem('aq:textbooks', obj.textbooks)
 				window.location.reload()
 			} catch {
 				alert('Invalid backup file')
@@ -101,6 +105,7 @@ export default function Settings() {
 							<div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Sections</div>
 							<div className="flex flex-col gap-2">
 								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('appearance')}>Appearance</Button>
+								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('pomodoro')}>Pomodoro Timer</Button>
 								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('nav-defaults')}>Navigation & Defaults</Button>
 								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('notifications')}>Notifications & Effects</Button>
 								<Button variant="secondary" className="justify-start rounded-xl" onClick={() => scrollTo('gamification')}>Gamification</Button>
@@ -135,6 +140,16 @@ export default function Settings() {
 										</SelectContent>
 									</Select>
 
+									<label className="text-sm">Font family</label>
+									<Select value={theme.font} onValueChange={(v)=> theme.setFont(v)}>
+										<SelectTrigger className="h-8"><SelectValue placeholder="Font"/></SelectTrigger>
+										<SelectContent>
+											{["Inter","Poppins","Nunito","Outfit","Roboto","Lato","Montserrat","Source Sans 3"].map(f => (
+												<SelectItem key={f} value={f}>{f}</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+
 									<label className="text-sm">Accent</label>
 									<Slider value={[theme.accent]} min={0} max={100} step={1} onValueChange={([v]) => theme.setAccent(v)} />
 
@@ -149,6 +164,38 @@ export default function Settings() {
 
 									<label className="text-sm">Gradients</label>
 									<Switch checked={settings.gradientsEnabled} onCheckedChange={(b)=>settings.set({ gradientsEnabled: b })} />
+								</div>
+								</CardContent>
+							</Card>
+
+							<Card id="pomodoro" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
+								<CardContent className="p-4 space-y-4">
+								<div className="text-sm font-semibold">Pomodoro Timer</div>
+								<div className="grid grid-cols-2 gap-3 items-center">
+									<label className="text-sm">Position</label>
+									<Select value={settings.pomodoroPosition} onValueChange={(v)=>settings.set({ pomodoroPosition: v as PomodoroPosition })}>
+										<SelectTrigger className="h-8"><SelectValue placeholder="Position"/></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="draggable">Draggable (Snap to corners)</SelectItem>
+											<SelectItem value="tl">Static - Top Left</SelectItem>
+											<SelectItem value="tr">Static - Top Right</SelectItem>
+											<SelectItem value="bl">Static - Bottom Left</SelectItem>
+											<SelectItem value="br">Static - Bottom Right</SelectItem>
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Timer size</label>
+									<Select value={settings.pomodoroSize} onValueChange={(v)=>settings.set({ pomodoroSize: v as PomodoroSize })}>
+										<SelectTrigger className="h-8"><SelectValue placeholder="Size"/></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="small">Small</SelectItem>
+											<SelectItem value="medium">Medium</SelectItem>
+											<SelectItem value="large">Large</SelectItem>
+										</SelectContent>
+									</Select>
+
+									<label className="text-sm">Auto-hide when not running</label>
+									<Switch checked={settings.pomodoroAutoHide} onCheckedChange={(b)=>settings.set({ pomodoroAutoHide: b })} />
 								</div>
 								</CardContent>
 							</Card>
@@ -214,6 +261,15 @@ export default function Settings() {
 											</SelectContent>
 										</Select>
 
+										<label className="text-sm">GPA scale</label>
+										<Select value={settings.gpaScale} onValueChange={(v: GPAScale)=>settings.set({ gpaScale: v })}>
+											<SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+											<SelectContent>
+												<SelectItem value="4-highest">4.00 is highest</SelectItem>
+												<SelectItem value="1-highest">1.00 is highest</SelectItem>
+											</SelectContent>
+										</Select>
+
 									<label className="text-sm">Ask before leaving</label>
 									<Switch checked={settings.askBeforeLeave} onCheckedChange={(b)=>settings.set({ askBeforeLeave: b })} />
 								</div>
@@ -264,7 +320,7 @@ export default function Settings() {
 							<Card id="data" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
 								<CardContent className="p-4 space-y-4">
 									<div className="text-sm font-semibold">Data</div>
-									<div className="text-xs text-muted-foreground">Use the Import button at the top-right. You can export your data below. This backs up settings, theme, academic plan, schedule, and tasks as JSON.</div>
+									<div className="text-xs text-muted-foreground">Use the Import button at the top-right. You can export your data below. This backs up settings, theme, academic plan, schedule, tasks, scholarships, and textbooks as JSON.</div>
 									<div className="flex justify-end">
 										<Button variant="secondary" className="rounded-xl" onClick={exportData}>Export backup</Button>
 									</div>

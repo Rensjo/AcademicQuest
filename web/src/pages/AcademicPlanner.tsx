@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAcademicPlan, CourseRow } from "@/store/academicPlanStore";
 import { useTheme, PALETTES } from "@/store/theme";
+import { useSettings } from "@/store/settingsStore";
 
 // ----------------------------------
 // 1) Imports & small utilities
@@ -190,19 +191,20 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
   const addRow = useAcademicPlan((s) => s.addRow);
   const updateRow = useAcademicPlan((s) => s.updateRow);
   const removeRow = useAcademicPlan((s) => s.removeRow);
+  const gpaScale = useSettings((s) => s.gpaScale);
 
   const year = years.find((y) => y.id === yearId);
   const term = year?.terms?.[termIndex];
-  if (!year || !term) return null;
+  const courses = React.useMemo(() => term?.courses ?? [], [term?.courses]);
 
   // Derived totals
   const totalCredits = React.useMemo(
-    () => term.courses.reduce((sum, r) => sum + (Number(r.credits) || 0), 0),
-    [term.courses]
+    () => courses.reduce((sum, r) => sum + (Number(r.credits) || 0), 0),
+    [courses]
   );
 
   const termGPA = React.useMemo(() => {
-    const { wSum, cSum } = term.courses.reduce(
+    const { wSum, cSum } = courses.reduce(
       (acc, r) => {
         const cr = Number(r.credits) || 0;
         const gp = typeof r.gpa === "number" ? r.gpa : undefined;
@@ -212,7 +214,15 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
       { wSum: 0, cSum: 0 }
     );
     return cSum > 0 ? wSum / cSum : 0;
-  }, [term.courses]);
+  }, [courses]);
+
+  // Convert display GPA if the user prefers a 1.00-highest scale (maps 0–4 → 5–1)
+  const displayTermGPA = React.useMemo(() => {
+    const g = Math.max(0, Math.min(4, termGPA));
+    return gpaScale === '1-highest' ? (5 - g) : g;
+  }, [termGPA, gpaScale]);
+
+  if (!year || !term) return null;
 
   return (
     <Card className="border-0 shadow-lg rounded-3xl overflow-hidden bg-white/80 dark:bg-neutral-900/60 min-w-[900px]">
@@ -247,7 +257,7 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
             <span className="text-muted-foreground mr-2">Total Credits</span><span className="font-semibold">{totalCredits}</span>
           </div>
           <div className="text-sm">
-            <span className="text-muted-foreground mr-2">Term GPA</span><span className="font-semibold">{termGPA.toFixed(2)}</span>
+            <span className="text-muted-foreground mr-2">Term GPA</span><span className="font-semibold">{displayTermGPA.toFixed(2)}</span>
           </div>
         </div>
       </CardContent>
@@ -266,8 +276,14 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
  * - Provides a dialog to pick/add a School Year and auto-scroll to it.
  */
 export default function AcademicPlanner() {
-  const navigate = useNavigate(); // kept for future use (e.g., tabs)
   const gradientStyle = useThemedGradient();
+  const theme = useTheme();
+  // compute scrollbar skin class once per render
+  const scrollCls = React.useMemo(() => {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = theme.mode === "dark" || (theme.mode === "system" && prefersDark);
+    return isDark ? "dark-scrollbar" : "light-scrollbar";
+  }, [theme.mode]);
 
   // --- store selections & helpers ---
   const years = useAcademicPlan((s) => s.years);
@@ -384,7 +400,7 @@ export default function AcademicPlanner() {
         {/* Render all School Years vertically (each row horizontally scrolls its Terms) */}
         <div className="space-y-16">
           {years.map((y) => (
-            <div key={y.id} className="space-y-4" ref={(el) => (yearRefs.current[y.id] = el)}>
+            <div key={y.id} className="space-y-4" ref={(el) => { yearRefs.current[y.id] = el; }}>
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold tracking-tight">
                   {y.label}
@@ -393,13 +409,7 @@ export default function AcademicPlanner() {
 
               <div className="flex">
                 {/* Scrollable Terms */}
-                <div
-                  className={`overflow-x-auto flex-1 ${
-                    (useTheme().mode === "dark" || (useTheme().mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches))
-                      ? "dark-scrollbar"
-                      : "light-scrollbar"
-                  }`}
-                >
+                <div className={`overflow-x-auto flex-1 ${scrollCls}`}>
                   <div className="flex gap-6 items-start min-w-max">
                     {y.terms.map((_, idx) => (
                       <div
@@ -407,7 +417,7 @@ export default function AcademicPlanner() {
                         ref={(el) => {
                           if (!termRefs.current[y.id]) termRefs.current[y.id] = [];
                           if (el) {
-                            while (termRefs.current[y.id].length <= idx) termRefs.current[y.id].push(null as any);
+                            while (termRefs.current[y.id].length <= idx) termRefs.current[y.id].push(null as unknown as HTMLDivElement);
                             termRefs.current[y.id][idx] = el;
                             setTimeout(() => updateHeightForYear(y.id), 0);
                           }
@@ -425,7 +435,7 @@ export default function AcademicPlanner() {
                     className="w-full rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 
                               dark:bg-neutral-900/60 hover:bg-white/80 dark:hover:bg-neutral-800/60 transition"
                     style={{ height: termHeights[y.id] || 560 }}
-                    onClick={() => setTermsCount(y.id, Math.min(4, y.terms.length + 1))}
+                    onClick={() => setTermsCount(y.id, (Math.min(4, y.terms.length + 1) as 2 | 3 | 4))}
                     title={y.terms.length >= 4 ? "Max 4 terms" : "Add new term"}
                     disabled={y.terms.length >= 4}
                   >
@@ -444,7 +454,7 @@ export default function AcademicPlanner() {
         {/* Bottom: Add New School Year */}
         <div className="mt-4 pb-8">
           <Button
-            className="w-full h-16 rounded-2xl border border-black/10 dark:border-white/10 
+            className="w-full h-24 rounded-2xl border border-black/10 dark:border-white/10 
                       bg-white/70 dark:bg-neutral-900/60 hover:bg-white/80 dark:hover:bg-neutral-800/60 
                       transition text-muted-foreground font-semibold"
             onClick={() => {

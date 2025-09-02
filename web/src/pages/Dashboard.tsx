@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme, PALETTES } from '@/store/theme'
 import { useAQ } from '@/store/aqStore'
 import { useSchedule } from "@/store/scheduleStore";
+import { useSettings } from "@/store/settingsStore";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, isWithinNextNDays, AQTask, TaskStatus } from "@/store/tasksStore";
+import { useStudySessions, minutesByDay } from "@/store/studySessionsStore";
 
 import React, { useMemo, useState, useEffect } from "react";
 // import { DashboardQuickTasks } from "@/pages/Tasks";
@@ -21,7 +23,7 @@ import {
   School,
   Trophy,
   Star,
-  
+  Timer,
   Wallet,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,22 +78,7 @@ const mock = {
 
 // donut data now derived from real tasks (taskDonutData)
 
-const studyTrend = [
-  { d: "Mon", h: 2.0 },
-  { d: "Tue", h: 1.5 },
-  { d: "Wed", h: 2.8 },
-  { d: "Thu", h: 1.1 },
-  { d: "Fri", h: 2.6 },
-  { d: "Sat", h: 3.2 },
-  { d: "Sun", h: 1.4 },
-];
-
-const gradeDistribution = [
-  { range: "90–100", count: 2 },
-  { range: "80–89", count: 4 },
-  { range: "70–79", count: 1 },
-  { range: "<70", count: 0 },
-];
+// grade distribution will be computed from current term GPAs (0–4 scale)
 
 //
 
@@ -262,9 +249,11 @@ export default function AcademicQuestDashboard() {
   const years = useAcademicPlan((s) => s.years);
   const selectedYearId = useAcademicPlan((s) => s.selectedYearId);
   const setSelectedYear = useAcademicPlan((s) => s.setSelectedYear);
+  const gpaScale = useSettings((s) => s.gpaScale);
   const tasks = useTasksStore((s) => s.tasks);
   const addTask = useTasksStore((s) => s.addTask);
   const updateTask = useTasksStore((s) => s.updateTask);
+  const studySessions = useStudySessions((s) => s.sessions);
 
   // derive active year/term for quick-add defaults
   const activeYear = React.useMemo(() => {
@@ -289,6 +278,106 @@ export default function AcademicQuestDashboard() {
     { name: "Complete", value: taskPct },
     { name: "Remaining", value: 100 - taskPct },
   ]), [taskPct]);
+
+  // Real study trend data for the last 7 days
+  const studyTrend = React.useMemo(() => {
+    const now = new Date();
+    const endDate = new Date(now);
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 6);
+    
+    const dayData = minutesByDay(studySessions, startDate, endDate);
+    
+    return dayData.map(({ date, minutes }) => {
+      const dateObj = new Date(date);
+      return {
+        d: dateObj.toLocaleDateString('en-US', { weekday: 'short' }),
+        h: Math.round((minutes / 60) * 10) / 10 // Convert minutes to hours with 1 decimal
+      };
+    });
+  }, [studySessions]);
+
+  // Current term totals from Academic Planner: Units and GPA
+  const totalUnits = React.useMemo(() => {
+    const courses = activeTerm?.courses || [];
+    return courses.reduce((sum, r) => sum + (Number(r.credits) || 0), 0);
+  }, [activeTerm?.courses]);
+
+  const termGPA = React.useMemo(() => {
+    const courses = activeTerm?.courses || [];
+    const { wSum, cSum } = courses.reduce(
+      (acc, r) => {
+        const cr = Number(r.credits) || 0;
+        const gp = typeof r.gpa === "number" ? r.gpa : undefined;
+        if (cr > 0 && gp !== undefined) { acc.wSum += cr * gp; acc.cSum += cr; }
+        return acc;
+      },
+      { wSum: 0, cSum: 0 }
+    );
+    return cSum > 0 ? wSum / cSum : 0;
+  }, [activeTerm?.courses]);
+
+  const displayGPA = React.useMemo(() => {
+    const g = Math.max(0, Math.min(4, termGPA));
+    return gpaScale === '1-highest' ? (5 - g) : g;
+  }, [termGPA, gpaScale]);
+
+  // Build grade distribution buckets from the current term's filled GPAs (raw 0–4 scale)
+  type DistBucket = { range: string; min: number; max: number; count: number };
+  const gradeDist: DistBucket[] = React.useMemo(() => {
+    const buckets: DistBucket[] = [
+      { range: '3.50–4.00', min: 3.5, max: 4.01, count: 0 },
+      { range: '3.00–3.49', min: 3.0, max: 3.5, count: 0 },
+      { range: '2.50–2.99', min: 2.5, max: 3.0, count: 0 },
+      { range: '2.00–2.49', min: 2.0, max: 2.5, count: 0 },
+      { range: '< 2.00',     min: -0.01, max: 2.0, count: 0 },
+    ];
+    const courses = activeTerm?.courses || [];
+    courses.forEach((r) => {
+      if (typeof r.gpa !== 'number') return;
+      const g = Math.max(0, Math.min(4, r.gpa));
+      const b = buckets.find(bk => g >= bk.min && g < bk.max);
+      if (b) b.count += 1;
+    });
+    return buckets;
+  }, [activeTerm?.courses]);
+
+  // Details modal state
+  const [gradesOpen, setGradesOpen] = useState(false);
+
+  // Additional term performance stats for the details dialog
+  const termStats = React.useMemo(() => {
+    const courses = (activeTerm?.courses || []).filter(r => typeof r.gpa === 'number');
+    const n = courses.length;
+    if (!n) return {
+      count: 0, credits: 0, avg: 0, avgDisplay: 0, median: 0, medianDisplay: 0, best: 0, bestDisplay: 0, worst: 0, worstDisplay: 0,
+      weighted: termGPA, weightedDisplay: displayGPA,
+      coursesSorted: [] as typeof courses,
+    };
+    const credits = courses.reduce((s, r) => s + (Number(r.credits) || 0), 0);
+    const gpas = courses.map(r => Math.max(0, Math.min(4, r.gpa as number))).sort((a,b)=>a-b);
+    const avg = gpas.reduce((s,g)=>s+g,0) / n;
+    const median = n % 2 ? gpas[(n-1)/2] : (gpas[n/2 - 1] + gpas[n/2]) / 2;
+    const best = gpas[gpas.length - 1];
+    const worst = gpas[0];
+    const convert = (g: number) => gpaScale === '1-highest' ? (5 - g) : g;
+    const coursesSorted = [...courses].sort((a,b)=> (b.gpa as number) - (a.gpa as number));
+    return {
+      count: n,
+      credits,
+      avg,
+      avgDisplay: convert(avg),
+      median,
+      medianDisplay: convert(median),
+      best,
+      bestDisplay: convert(best),
+      worst,
+      worstDisplay: convert(worst),
+      weighted: termGPA,
+      weightedDisplay: displayGPA,
+      coursesSorted,
+    };
+  }, [activeTerm?.courses, termGPA, displayGPA, gpaScale]);
 
   // quick add task dialog state
   const [quickOpen, setQuickOpen] = useState(false);
@@ -416,14 +505,32 @@ export default function AcademicQuestDashboard() {
                   Academic Quest — Dashboard
                 </h1>
                 <p className="mt-2 text-sm md:text-base text-neutral-600 max-w-2xl">
-                  Your all‑in‑one academic tracker to boost productivity.
+                  Your all‑in‑one Gamified Academic Tracker for Productivity.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <Button className="rounded-2xl" onClick={() => navigate("/planner")}>
                     Open Planner
                   </Button>
                   <Button variant="outline" className="rounded-2xl" onClick={() => setQuickOpen(true)}>Quick Add Task</Button>
-                  <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/80 dark:bg-neutral-900/60 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0">Customize Widgets</Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-2xl" 
+                    onClick={() => {
+                      // Force show Pomodoro at bottom-right corner
+                      localStorage.setItem('aq:pomo-corner', 'br')
+                      // Force a re-render by updating the value and triggering a custom event
+                      window.dispatchEvent(new CustomEvent('pomo-show', { detail: { corner: 'br' } }))
+                      // Also try the storage event
+                      window.dispatchEvent(new StorageEvent('storage', {
+                        key: 'aq:pomo-corner',
+                        newValue: 'br'
+                      }))
+                    }}
+                  >
+                    <Timer className="h-4 w-4 mr-2" />
+                    Show Pomodoro
+                  </Button>
+                  <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/80 dark:bg-neutral-900/60 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0" onClick={() => navigate('/settings')}>Settings</Button>
                 </div>
               </div>
 
@@ -580,8 +687,8 @@ export default function AcademicQuestDashboard() {
               <CardContent className="p-5">
                 <h3 className="font-semibold mb-3">Quick Overview</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ">
-          <Stat label="Current GPA" value={mock.kpis.gpa.toFixed(2)} icon={Calculator} hint="Auto‑computed from terms" colors={COLORS} />
-          <Stat label="Units" value={mock.kpis.units} icon={School} hint="Enrolled this term" colors={COLORS} />
+          <Stat label="Current GPA" value={displayGPA.toFixed(2)} icon={Calculator} hint="Auto‑computed from Academic Planner" colors={COLORS} />
+          <Stat label="Units" value={totalUnits} icon={School} hint="Enrolled this term" colors={COLORS} />
           <Stat label="Tasks Done" value={`${taskPct}%`} icon={ClipboardList} hint="This term" colors={COLORS} onIconClick={() => navigate("/tasks")} />
                 </div>
               </CardContent>
@@ -748,11 +855,15 @@ export default function AcademicQuestDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Grade Distribution</h3>
-                    <Button variant="ghost" className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0">View Details</Button>
+                    <Button
+                      variant="ghost"
+                      className="rounded-2xl bg-transparent text-foreground hover:bg-black/5 dark:hover:bg-white/10 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
+                      onClick={() => setGradesOpen(true)}
+                    >More Details</Button>
                   </div>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={gradeDistribution}>
+                      <BarChart data={gradeDist}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="range" />
                         <YAxis />
@@ -765,6 +876,71 @@ export default function AcademicQuestDashboard() {
               </Card>
             </div>
           </div>
+
+          {/* Grade distribution details dialog */}
+          <Dialog open={gradesOpen} onOpenChange={setGradesOpen}>
+            <DialogContent className="max-w-3xl border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/95">
+              <DialogHeader>
+                <DialogTitle>Current Term Performance</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-5">
+                {/* Quick stats */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Courses with GPA</div><div className="text-lg font-semibold">{termStats.count}</div></div>
+                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Total Credits</div><div className="text-lg font-semibold">{termStats.credits}</div></div>
+                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Weighted GPA</div><div className="text-lg font-semibold">{termStats.weightedDisplay.toFixed(2)}</div></div>
+                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Average (unweighted)</div><div className="text-lg font-semibold">{termStats.avgDisplay.toFixed(2)}</div></div>
+                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Median</div><div className="text-lg font-semibold">{termStats.medianDisplay.toFixed(2)}</div></div>
+                  <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60"><div className="text-xs text-muted-foreground">Best / Worst</div><div className="text-lg font-semibold">{termStats.bestDisplay.toFixed(2)} / {termStats.worstDisplay.toFixed(2)}</div></div>
+                </div>
+                {/* Dist chart */}
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={gradeDist}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="range" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill={COLORS[2]} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Courses table */}
+                <div className="overflow-auto rounded-2xl border border-black/10 dark:border-white/10">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-neutral-50/70 dark:bg-neutral-800/60 text-muted-foreground">
+                        <th className="text-left p-2 font-medium">Code</th>
+                        <th className="text-left p-2 font-medium">Course</th>
+                        <th className="text-left p-2 font-medium">Credits</th>
+                        <th className="text-left p-2 font-medium">GPA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {termStats.coursesSorted.map((c) => {
+                        const g = Math.max(0, Math.min(4, (c.gpa as number)));
+                        const display = gpaScale === '1-highest' ? (5 - g) : g;
+                        return (
+                          <tr key={c.id} className="border-t border-black/5 dark:border-white/10">
+                            <td className="p-2 whitespace-nowrap">{c.code || '-'}</td>
+                            <td className="p-2">{c.name || '-'}</td>
+                            <td className="p-2">{Number(c.credits) || 0}</td>
+                            <td className="p-2 font-medium">{display.toFixed(2)}</td>
+                          </tr>
+                        );
+                      })}
+                      {termStats.coursesSorted.length === 0 && (
+                        <tr><td className="p-3 text-muted-foreground" colSpan={4}>No courses with GPA yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button className="rounded-2xl" variant="outline" onClick={() => setGradesOpen(false)}>Close</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* All‑tabs Summary (clickable previews) */}
           <div className="mt-10">
@@ -803,9 +979,9 @@ export default function AcademicQuestDashboard() {
                 colors={COLORS}
                 onClick={() => navigate("/courses")}
               />
-              <Feature icon={Wallet} title="Scholarship Tracker" desc="Status, deadlines, days‑left, submitted docs, awards with charts." cta="Track Scholarships"  colors={COLORS}/>
-              <Feature icon={BookMarked} title="Textbook Tracker" desc="Per‑class texts, publisher, status, purchase & return dates." cta="Log Textbooks" colors={COLORS} />
-              <Feature icon={Settings} title="Settings" desc="Themes, notifications, data import/export, grading scales, calendar sync, time format." cta="Open Settings" colors={COLORS} />
+              <Feature icon={Wallet} title="Scholarship Tracker" desc="Status, deadlines, days‑left, submitted docs, awards with charts." cta="Track Scholarships"  colors={COLORS} onClick={() => navigate("/scholarships")} />
+              <Feature icon={BookMarked} title="Textbook Tracker" desc="Per‑class texts, publisher, status, purchase & return dates." cta="Log Textbooks" colors={COLORS} onClick={() => navigate("/textbooks")} />
+              <Feature icon={Settings} title="Settings" desc="Themes, notifications, data import/export, grading scales, calendar sync, time format." cta="Open Settings" colors={COLORS} onClick={() => navigate("/settings")} />
             </div>
           </div>
 
