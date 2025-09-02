@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAcademicPlan } from '@/store/academicPlanStore'
 import { useStudySessions } from '@/store/studySessionsStore'
-import { Play, Pause, X, Check, GripVertical } from 'lucide-react'
+import { Play, Pause, X, Check, GripVertical, Timer } from 'lucide-react'
 
 type Corner = 'tl' | 'tr' | 'bl' | 'br'
 
@@ -413,108 +413,134 @@ export default function PomodoroFloat() {
 
       {/* Panel */}
       <Dialog open={panelOpen} onOpenChange={setPanelOpen}>
-        <DialogContent className="max-w-md border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/90">
-          <DialogHeader><DialogTitle>Pomodoro</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="text-7xl font-extrabold tabular-nums mb-4">{String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}</div>
-              <div className="flex gap-2 justify-center">
+        <DialogContent className="max-w-lg border-0 shadow-2xl rounded-3xl bg-gradient-to-br from-white to-slate-50/90 dark:from-neutral-900 dark:to-neutral-800/90 backdrop-blur-lg">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
+                <Timer size={18} className="text-white" />
+              </div>
+              Pomodoro Timer
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 px-2">
+            <div className="text-center bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800/50 dark:to-neutral-700/50 rounded-3xl p-6 border border-neutral-200/50 dark:border-neutral-600/50">
+              <div className="text-7xl font-extrabold tabular-nums mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                {String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
+              </div>
+              <div className="flex gap-2 justify-center flex-wrap">
                 <Button 
-                  className="rounded-2xl border-0" 
+                  className="rounded-2xl border-0 px-4 py-2.5 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-sm" 
                   style={{ 
-                    background: `linear-gradient(135deg, ${COLORS[0]}99, ${COLORS[1]}99)`,
-                    color: 'white',
-                    opacity: 0.95
+                    background: 'linear-gradient(135deg, #059669, #0891b2)',
+                    color: 'white'
                   }}
                   onClick={() => { 
                     setSecondsLeft(workMin*60); 
                     setRunning(true);
                     setSessionStartTime(new Date().toISOString());
                   }}
-                ><Play className="h-4 w-4 mr-1" />Start</Button>
+                ><Play className="h-3.5 w-3.5 mr-1.5" />Start Work</Button>
                 <Button 
-                  className="rounded-2xl" 
+                  className="rounded-2xl px-4 py-2.5 font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
                   variant="outline" 
                   style={{ 
-                    borderColor: `${COLORS[2]}66`,
-                    color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-                    opacity: 0.8
+                    borderColor: '#e5e7eb',
+                    color: '#6b7280',
+                    background: 'rgba(255,255,255,0.8)'
                   }}
                   onClick={() => setRunning(false)}
-                ><Pause className="h-4 w-4 mr-1" />Pause</Button>
+                ><Pause className="h-3.5 w-3.5 mr-1.5" />Pause</Button>
                 <Button 
-                  className="rounded-2xl" 
+                  className="rounded-2xl px-4 py-2.5 font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
                   variant="outline" 
                   style={{ 
-                    borderColor: `${COLORS[2]}66`,
-                    color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-                    opacity: 0.8
+                    borderColor: '#e5e7eb',
+                    color: '#6b7280',
+                    background: 'rgba(255,255,255,0.8)'
                   }}
                   onClick={() => {
                     setSecondsLeft(workMin*60);
                     setRunning(false);
                     setSessionStartTime(null);
                   }}
-                ><X className="h-4 w-4 mr-1" />Reset</Button>
+                ><X className="h-3.5 w-3.5 mr-1.5" />Reset</Button>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Work (min)</div>
-                <Input type="number" min={1} value={workMin} onChange={(e)=>setWorkMin(Math.max(1, Number(e.target.value)||0))} />
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Work (min)</div>
+                <Input 
+                  type="number" 
+                  min={1} 
+                  value={workMin} 
+                  onChange={(e)=>setWorkMin(Math.max(1, Number(e.target.value)||0))} 
+                  className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-10"
+                />
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Short Break</div>
-                <Input type="number" min={1} value={shortMin} onChange={(e)=>setShortMin(Math.max(1, Number(e.target.value)||0))} />
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Short Break</div>
+                <Input 
+                  type="number" 
+                  min={1} 
+                  value={shortMin} 
+                  onChange={(e)=>setShortMin(Math.max(1, Number(e.target.value)||0))} 
+                  className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-10"
+                />
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Long Break</div>
-                <Input type="number" min={1} value={longMin} onChange={(e)=>setLongMin(Math.max(1, Number(e.target.value)||0))} />
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Long Break</div>
+                <Input 
+                  type="number" 
+                  min={1} 
+                  value={longMin} 
+                  onChange={(e)=>setLongMin(Math.max(1, Number(e.target.value)||0))} 
+                  className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-10"
+                />
               </div>
             </div>
             <div className="flex gap-2">
               <Button 
-                className="rounded-2xl" 
+                className="rounded-2xl px-3 py-2 font-semibold flex-1 shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
                 variant="outline" 
                 style={{ 
-                  borderColor: `${COLORS[2]}66`,
-                  color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-                  opacity: 0.8
+                  borderColor: '#0891b2',
+                  color: '#0891b2',
+                  background: 'rgba(8, 145, 178, 0.1)'
                 }}
                 onClick={() => setSecondsLeft(shortMin*60)}
               >Short Break</Button>
               <Button 
-                className="rounded-2xl" 
+                className="rounded-2xl px-3 py-2 font-semibold flex-1 shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
                 variant="outline" 
                 style={{ 
-                  borderColor: `${COLORS[2]}66`,
-                  color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-                  opacity: 0.8
+                  borderColor: '#7c3aed',
+                  color: '#7c3aed',
+                  background: 'rgba(124, 58, 237, 0.1)'
                 }}
                 onClick={() => setSecondsLeft(longMin*60)}
               >Long Break</Button>
             </div>
-            <div className="border-t border-black/10 dark:border-white/10 pt-3">
+            <div className="border-t border-neutral-200/50 dark:border-neutral-700/50 pt-4">
               <Button 
-                className="rounded-2xl" 
+                className="rounded-2xl px-4 py-2 font-semibold w-full shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
                 variant="outline" 
                 style={{ 
-                  borderColor: `${COLORS[2]}66`,
-                  color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-                  opacity: 0.8
+                  borderColor: '#e5e7eb',
+                  color: '#6b7280',
+                  background: 'rgba(255,255,255,0.8)'
                 }}
                 onClick={() => setLogOpen(true)}
               >Log Study Session</Button>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button 
-              className="rounded-2xl" 
+              className="rounded-2xl px-6 py-2 font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
               variant="outline" 
               style={{ 
-                borderColor: `${COLORS[2]}66`,
-                color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-                opacity: 0.8
+                borderColor: '#e5e7eb',
+                color: '#6b7280',
+                background: 'rgba(255,255,255,0.8)'
               }}
               onClick={() => setPanelOpen(false)}
             >Close</Button>
@@ -524,8 +550,15 @@ export default function PomodoroFloat() {
 
       {/* Manual Log */}
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
-        <DialogContent className="max-w-md border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/70">
-          <DialogHeader><DialogTitle>Log Study Session</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg border-0 shadow-2xl rounded-3xl bg-gradient-to-br from-white to-slate-50/90 dark:from-neutral-900 dark:to-neutral-800/90 backdrop-blur-lg">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
+                <Check size={18} className="text-white" />
+              </div>
+              Log Study Session
+            </DialogTitle>
+          </DialogHeader>
           <LogForm onClose={()=>setLogOpen(false)} />
         </DialogContent>
       </Dialog>
@@ -534,11 +567,6 @@ export default function PomodoroFloat() {
 }
 
 function LogForm({ onClose }: { onClose: () => void }) {
-  const theme = useTheme()
-  const COLORS = PALETTES[theme.palette]
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const isDark = theme.mode === 'dark' || (theme.mode === 'system' && prefersDark)
-  
   const add = useStudySessions((s) => s.add)
   const years = useAcademicPlan((s) => s.years)
   const selectedYearId = useAcademicPlan((s) => s.selectedYearId)
@@ -592,40 +620,59 @@ function LogForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Date</div>
-          <Input type="date" className="rounded-xl" value={date} onChange={(e)=>setDate(e.target.value)} />
+    <div className="space-y-6 px-2">
+      <div className="text-center bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800/50 dark:to-neutral-700/50 rounded-3xl p-6 border border-neutral-200/50 dark:border-neutral-600/50">
+        <div className="text-xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          Add Study Session
         </div>
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Hours Studied</div>
+        <div className="text-sm text-neutral-600 dark:text-neutral-400">
+          Record your learning progress manually
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Date</div>
+          <Input 
+            type="date" 
+            className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-10" 
+            value={date} 
+            onChange={(e)=>setDate(e.target.value)} 
+          />
+        </div>
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Hours Studied</div>
           <Input 
             type="number" 
             min={0.25} 
             step={0.25} 
-            className="rounded-xl" 
+            className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-10" 
             value={hours} 
             onChange={(e)=>setHours(Math.max(0.25, Number(e.target.value)||1))} 
             placeholder="e.g., 2.5"
           />
         </div>
       </div>
+      
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Term</div>
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Term</div>
           <Select value={termId} onValueChange={(v)=>setTermId(v)}>
-            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select term" /></SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectTrigger className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 h-10">
+              <SelectValue placeholder="Select term" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-neutral-200 dark:border-neutral-700">
               {terms.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Course (optional)</div>
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Course (optional)</div>
           <Select value={courseId || 'general'} onValueChange={(v)=>setCourseId(v === 'general' ? undefined : v)}>
-            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Pick course" /></SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectTrigger className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 h-10">
+              <SelectValue placeholder="Pick course" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-neutral-200 dark:border-neutral-700">
               <SelectItem value="general">General Study</SelectItem>
               {courses.map(c => {
                 const displayName = c.code && c.name ? `${c.code} - ${c.name}` : (c.code || c.name || 'Course')
@@ -635,31 +682,41 @@ function LogForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
       </div>
-      <div>
-        <div className="text-xs text-muted-foreground mb-1">Notes (optional)</div>
-        <Input placeholder="What did you study?" className="rounded-xl" value={note} onChange={(e)=>setNote(e.target.value)} />
+      
+      <div className="space-y-2">
+        <div className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Notes (optional)</div>
+        <Input 
+          placeholder="What did you study?" 
+          className="rounded-xl border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-10" 
+          value={note} 
+          onChange={(e)=>setNote(e.target.value)} 
+        />
       </div>
-      <DialogFooter>
+      
+      <DialogFooter className="gap-3 pt-4">
         <Button 
-          className="rounded-2xl" 
+          className="rounded-2xl px-6 py-2 font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm" 
           variant="outline" 
           style={{ 
-            borderColor: `${COLORS[2]}66`,
-            color: isDark ? `${COLORS[1]}99` : `${COLORS[3]}99`,
-            opacity: 0.8
+            borderColor: '#e5e7eb',
+            color: '#6b7280',
+            background: 'rgba(255,255,255,0.8)'
           }}
           onClick={onClose}
         >Cancel</Button>
         <Button 
-          className="rounded-2xl border-0" 
+          className="rounded-2xl px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-sm" 
           style={{ 
-            background: `linear-gradient(135deg, ${COLORS[0]}99, ${COLORS[1]}99)`,
+            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
             color: 'white',
-            opacity: 0.95
+            border: 'none'
           }}
           onClick={commit} 
           disabled={hours <= 0}
-        ><Check className="h-4 w-4 mr-1"/>Log {hours} Hour{hours !== 1 ? 's' : ''}</Button>
+        >
+          <Check className="h-3.5 w-3.5 mr-1.5"/>
+          Log {hours} Hour{hours !== 1 ? 's' : ''}
+        </Button>
       </DialogFooter>
     </div>
   )
