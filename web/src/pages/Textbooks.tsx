@@ -115,7 +115,7 @@ export default function Textbooks() {
 						<div className="flex items-center gap-3 flex-wrap">
 							<CalendarDays className="h-5 w-5" />
 							<h1 className="text-2xl font-bold">Textbooks</h1>
-							<TopTabsInline />
+							<TopTabsInline active="textbooks" />
 						</div>
 					</div>
 					<Card className="shrink-0 border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60 w-[260px]">

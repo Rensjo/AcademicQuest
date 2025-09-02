@@ -37,6 +37,7 @@ type ScheduleState = {
 
   setSelectedYear: (id: string) => void;
   addYear: (label?: string, termsCount?: 2 | 3 | 4) => void;
+  removeYear: (yearId: string) => void;
   setTermsCount: (yearId: string, count: 2 | 3 | 4) => void;
   setTermDates: (yearId: string, termId: string, start?: string, end?: string) => void;
 
@@ -93,6 +94,17 @@ export const useSchedule = create<ScheduleState>()(
                 terms: makeTerms(termsCount),
               },
             ],
+          };
+        }),
+
+      removeYear: (yearId) =>
+        set((s) => {
+          const updatedYears = s.years.filter((y) => y.id !== yearId);
+          // If removing the selected year, reset selection
+          const newSelectedYearId = s.selectedYearId === yearId ? updatedYears[0]?.id : s.selectedYearId;
+          return {
+            years: updatedYears,
+            selectedYearId: newSelectedYearId,
           };
         }),
 

@@ -22,7 +22,6 @@
  */
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +30,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { useAcademicPlan, CourseRow } from "@/store/academicPlanStore";
 import { useTheme, PALETTES } from "@/store/theme";
 import { useSettings } from "@/store/settingsStore";
+import TopTabsInline from "@/components/TopTabsInline";
 
 // ----------------------------------
 // 1) Imports & small utilities
@@ -77,44 +77,7 @@ function useThemedGradient() {
 }
 
 // ----------------------------------
-// 2) Top tabs beside page title
-// ----------------------------------
-
-/**
- * TopTabsInline
- * Compact navigation tabs shown next to the page title.
- * Uses React Router to navigate between top-level pages.
- */
-function TopTabsInline() {
-  const navigate = useNavigate();
-  const tabs = [
-    { label: "Dashboard", path: "/" },
-    { label: "Academic Planner", path: "/planner", active: true },
-    { label: "Task Tracker", path: "/tasks" },
-    { label: "Schedule Planner", path: "/schedule" },
-    { label: "Course Planner", path: "/courses" },
-    { label: "Scholarships", path: "/scholarships" },
-    { label: "Textbooks", path: "/textbooks" },
-    { label: "Settings", path: "/settings" },
-  ];
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {tabs.map((t) => (
-        <Button
-          key={t.label}
-          variant={t.active ? "default" : "outline"}
-          className={`h-9 rounded-full ${t.active ? "" : "bg-white/70 dark:bg-neutral-900/60"}`}
-          onClick={() => navigate(t.path)}
-        >
-          {t.label}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-// ----------------------------------
-// 3) RowEditor — single editable row
+// 2) RowEditor — single editable row
 // ----------------------------------
 
 /** Props for RowEditor. */
@@ -132,20 +95,38 @@ interface RowEditorProps {
  */
 function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
   return (
-    <div className="grid grid-cols-[30px_100px_1fr_90px_70px_70px] gap-3 items-center py-2">
+    <div className="grid grid-cols-[30px_100px_1fr_90px_70px_70px] gap-3 items-center py-3">
       {/* Remove row */}
-      <Button variant="ghost" size="icon" onClick={onRemove} className="bg-white/80 dark:bg-neutral-900/60 border-black/10">
+      <Button 
+        variant="outline" 
+        size="icon" 
+        onClick={onRemove} 
+        className="h-9 w-9 rounded-2xl
+                  text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400
+                  hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-200
+                  focus:text-red-500 dark:focus:text-red-400"
+        title="Remove course"
+      >
         <Trash2 className="h-4 w-4" />
       </Button>
 
       {/* Code */}
-      <Input value={value.code} onChange={(e) => onChange({ ...value, code: e.target.value })} placeholder="Code" />
+      <Input 
+        value={value.code} 
+        onChange={(e) => onChange({ ...value, code: e.target.value })} 
+        placeholder="Code"
+        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+      />
 
       {/* Course name (pill) */}
       <div className="flex">
         <input
-          className="flex-1 h-9 rounded-full border border-black/10 dark:border-white/15 
-                    bg-white/80 dark:bg-neutral-900/60 px-3 outline-none"
+          className="flex-1 h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border border-gray-200/60 dark:border-gray-600/40 px-4
+                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200 outline-none
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
           placeholder="Course name"
@@ -153,10 +134,26 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
       </div>
 
       {/* Section */}
-      <Input value={value.section} onChange={(e) => onChange({ ...value, section: e.target.value })} placeholder="Sec." />
+      <Input 
+        value={value.section} 
+        onChange={(e) => onChange({ ...value, section: e.target.value })} 
+        placeholder="Sec."
+        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+      />
 
       {/* Credits */}
-      <Input type="number" step="0.5" value={value.credits} onChange={(e) => onChange({ ...value, credits: Number(e.target.value) || 0 })} placeholder="Cr." />
+      <Input 
+        type="number" 
+        step="0.5" 
+        value={value.credits} 
+        onChange={(e) => onChange({ ...value, credits: Number(e.target.value) || 0 })} 
+        placeholder="Cr."
+        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+      />
 
       {/* GPA (0.00–4.00) */}
       <Input
@@ -167,6 +164,9 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
         value={value.gpa ?? ""}
         onChange={(e) => onChange({ ...value, gpa: e.target.value === "" ? undefined : Number(e.target.value) })}
         placeholder="GPA"
+        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
       />
     </div>
   );
@@ -225,39 +225,51 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
   if (!year || !term) return null;
 
   return (
-    <Card className="border-0 shadow-lg rounded-3xl overflow-hidden bg-white/80 dark:bg-neutral-900/60 min-w-[900px]">
-      <CardContent className="p-4">
+    <Card className="border-0 shadow-xl rounded-3xl overflow-hidden bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl 
+                    ring-1 ring-gray-200/50 dark:ring-gray-600/50 min-w-[900px] hover:shadow-2xl transition-all duration-300">
+      <CardContent className="p-6">
         {/* Header */}
-        <div className="flex items-end justify-between mb-3">
+        <div className="flex items-end justify-between mb-4">
           <div className="space-y-1">
-            <div className="text-sm font-semibold">{term.name}</div>
-            <div className="text-xs text-muted-foreground">Program plan this term</div>
+            <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">{term.name}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Program plan this term</div>
           </div>
-          <Button size="sm" variant="outline" onClick={() => addRow(yearId, term.id)}>
+          <Button 
+            size="sm" 
+            variant="outline"
+            className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
+                      text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-md border-0
+                      hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                      transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                      font-medium tracking-wide"
+            onClick={() => addRow(yearId, term.id)}
+          >
             <Plus className="h-4 w-4 mr-1" /> Add Row
           </Button>
         </div>
 
         {/* Column headers */}
-        <div className="grid grid-cols-[30px_100px_1fr_90px_70px_63px] gap-4 text-xs font-medium 
-                        text-muted-foreground pb-1 border-b border-black/10 dark:border-white/10">
+        <div className="grid grid-cols-[30px_100px_1fr_90px_70px_63px] gap-4 text-sm font-semibold 
+                        text-gray-600 dark:text-gray-300 pb-3 border-b border-gray-200/60 dark:border-gray-600/40">
           <div></div><div>Code</div><div>Course Name</div><div>Sec.</div><div>Cr.</div><div>GPA</div>
         </div>
 
         {/* Editable rows */}
-        <div className="divide-y divide-black/5 dark:divide-white/10">
+        <div className="divide-y divide-gray-100/60 dark:divide-gray-700/40">
           {term.courses.map((r) => (
             <RowEditor key={r.id} value={r} onChange={(row) => updateRow(yearId, term.id, row)} onRemove={() => removeRow(yearId, term.id, r.id)} />
           ))}
         </div>
 
         {/* Footer totals */}
-        <div className="flex items-center justify-end pt-3 border-t border-black/5 dark:border-white/10 mt-3 gap-6">
+        <div className="flex items-center justify-end pt-4 border-t border-gray-200/60 dark:border-gray-600/40 mt-4 gap-6">
           <div className="text-sm">
-            <span className="text-muted-foreground mr-2">Total Credits</span><span className="font-semibold">{totalCredits}</span>
+            <span className="text-gray-500 dark:text-gray-400 mr-2">Total Credits</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-100 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">{totalCredits}</span>
           </div>
           <div className="text-sm">
-            <span className="text-muted-foreground mr-2">Term GPA</span><span className="font-semibold">{displayTermGPA.toFixed(2)}</span>
+            <span className="text-gray-500 dark:text-gray-400 mr-2">Term GPA</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-100 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">{displayTermGPA.toFixed(2)}</span>
           </div>
         </div>
       </CardContent>
@@ -349,23 +361,39 @@ export default function AcademicPlanner() {
           <div className="flex items-center gap-3 flex-wrap">
             <CalendarDays className="h-5 w-5" />
             <h1 className="text-2xl font-bold">Academic Planner</h1>
-            <TopTabsInline />
+            <TopTabsInline active="planner" />
           </div>
-          <Button variant="outline" className="rounded-2xl" onClick={() => setYearOpen(true)}>
+          <Button 
+            variant="outline" 
+            className="rounded-2xl h-11 bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                      text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 
+                      hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                      border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30
+                      transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
+            onClick={() => setYearOpen(true)}
+          >
             {activeYear?.label || "Choose School Year"} <span className="ml-1 opacity-60">▼</span>
           </Button>
         </div>
 
         {/* Year chooser dialog */}
         <Dialog open={yearOpen} onOpenChange={setYearOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Select School Year</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-md rounded-3xl bg-white/95 dark:bg-neutral-800/95 backdrop-blur-xl border-0 shadow-2xl 
+                                    ring-1 ring-gray-200/50 dark:ring-gray-600/50">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">Select School Year</DialogTitle>
+            </DialogHeader>
             <div className="space-y-2 max-h-64 overflow-auto">
               {years.map((y) => (
                 <Button
                   key={y.id}
                   variant={y.id === activeYearId ? "default" : "outline"}
-                  className="w-full justify-start rounded-xl text-lg py-5"
+                  className={`w-full justify-start rounded-2xl text-lg py-5 transition-all duration-300 font-medium tracking-wide
+                    ${y.id === activeYearId 
+                      ? "bg-gradient-to-r from-cyan-600/90 to-blue-600/90 dark:from-cyan-500/90 dark:to-blue-500/90 text-white shadow-lg ring-2 ring-cyan-200/50 dark:ring-cyan-400/30 backdrop-blur-md hover:from-cyan-700/95 hover:to-blue-700/95 dark:hover:from-cyan-400/95 dark:hover:to-blue-400/95" 
+                      : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30"
+                    }
+                    hover:scale-102 active:scale-98 hover:-translate-y-0.5 active:translate-y-0`}
                   onClick={() => {
                     setSelectedYear(y.id);
                     setYearOpen(false);
@@ -378,6 +406,11 @@ export default function AcademicPlanner() {
             </div>
             <DialogFooter className="mt-3">
               <Button
+                className="bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
+                          text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-md 
+                          hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                          transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                          rounded-2xl font-medium tracking-wide"
                 onClick={() => {
                   const newLabel = getNextYearLabel();
                   addYear(newLabel);
@@ -400,9 +433,10 @@ export default function AcademicPlanner() {
         {/* Render all School Years vertically (each row horizontally scrolls its Terms) */}
         <div className="space-y-16">
           {years.map((y) => (
-            <div key={y.id} className="space-y-4" ref={(el) => { yearRefs.current[y.id] = el; }}>
+            <div key={y.id} className="space-y-6" ref={(el) => { yearRefs.current[y.id] = el; }}>
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 
+                              bg-clip-text text-transparent">
                   {y.label}
                 </h2>
               </div>
@@ -432,15 +466,19 @@ export default function AcademicPlanner() {
                 {/* Fixed right rail: "+ Add New Term" */}
                 <div className="ml-4 w-[120px] shrink-0 flex">
                   <button
-                    className="w-full rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 
-                              dark:bg-neutral-900/60 hover:bg-white/80 dark:hover:bg-neutral-800/60 transition"
+                    className="w-full rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                              border border-gray-200/60 dark:border-gray-600/40 shadow-md backdrop-blur-md
+                              hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                              hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:border-green-200/60 dark:hover:border-green-400/30
+                              transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
+                              disabled:hover:scale-100 disabled:hover:shadow-md"
                     style={{ height: termHeights[y.id] || 560 }}
                     onClick={() => setTermsCount(y.id, (Math.min(4, y.terms.length + 1) as 2 | 3 | 4))}
                     title={y.terms.length >= 4 ? "Max 4 terms" : "Add new term"}
                     disabled={y.terms.length >= 4}
                   >
                     <span className={`block rotate-90 whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide select-none 
-                                      ${y.terms.length >= 4 ? "text-muted-foreground/40" : "text-muted-foreground"}`
+                                      ${y.terms.length >= 4 ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-300"}`
                                     }>
                       {y.terms.length >= 4 ? "Max Terms" : "+ Add New Term"}
                     </span>
@@ -454,9 +492,12 @@ export default function AcademicPlanner() {
         {/* Bottom: Add New School Year */}
         <div className="mt-4 pb-8">
           <Button
-            className="w-full h-24 rounded-2xl border border-black/10 dark:border-white/10 
-                      bg-white/70 dark:bg-neutral-900/60 hover:bg-white/80 dark:hover:bg-neutral-800/60 
-                      transition text-muted-foreground font-semibold"
+            className="w-full h-24 rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                      border border-gray-200/60 dark:border-gray-600/40 shadow-md backdrop-blur-md
+                      hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                      hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:border-green-200/60 dark:hover:border-green-400/30
+                      transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-1 active:translate-y-0
+                      text-gray-600 dark:text-gray-300 font-semibold"
             onClick={() => {
               const newLabel = getNextYearLabel();
               addYear(newLabel);

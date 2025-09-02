@@ -1,15 +1,15 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, Plus, Trash2 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, tasksByTerm, AQTask, TaskStatus } from "@/store/tasksStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTheme, PALETTES } from "@/store/theme";
+import TopTabsInline from "@/components/TopTabsInline";
 
 // Using global AQTask from tasks store
 
@@ -42,36 +42,6 @@ function useThemedGradient() {
   }, [accentLocal, theme.mode, THEME_COLORS]);
 }
 
-// ---------- Inline top tabs (beside title) ----------
-function TopTabsInline({ active }: { active: "dashboard"|"planner"|"tasks"|"schedule"|"courses"|"scholarships"|"textbooks"|"settings" }) {
-  const navigate = useNavigate();
-  const tabs = [
-    { key: "dashboard", label: "Dashboard", path: "/" },
-    { key: "planner", label: "Academic Planner", path: "/planner" },
-    { key: "tasks", label: "Task Tracker", path: "/tasks" },
-    { key: "schedule", label: "Schedule Planner", path: "/schedule" },
-    // match existing routes
-  { key: "courses", label: "Course Planner", path: "/course-planner" },
-    { key: "scholarships", label: "Scholarships", path: "/scholarships" },
-    { key: "textbooks", label: "Textbooks", path: "/textbooks" },
-    { key: "settings", label: "Settings", path: "/settings" },
-  ] as const;
-  return (
-    <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
-      {tabs.map((t) => (
-        <Button
-          key={t.key}
-          variant={active === t.key ? "default" : "outline"}
-          className={`h-9 rounded-full ${active === t.key ? "" : "bg-white/70 dark:bg-neutral-900/60"}`}
-          onClick={() => navigate(t.path)}
-        >
-          {t.label}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
 export default function Tasks() {
   const gradientStyle = useThemedGradient();
   // Pull academic plan data
@@ -99,6 +69,7 @@ export default function Tasks() {
   const tasks = useTasksStore((s) => s.tasks);
   const addTask = useTasksStore((s) => s.addTask);
   const updateTask = useTasksStore((s) => s.updateTask);
+  const removeTask = useTasksStore((s) => s.removeTask);
 
   // Active-term tasks from store
   const termKey = activeYear && activeTerm ? `${activeYear.id}:${activeTerm.id}` : "";
@@ -179,13 +150,15 @@ export default function Tasks() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <CalendarDays className="h-5 w-5" />
-              <h1 className="text-2xl font-bold">Task Trackerrrrrr</h1>
+              <h1 className="text-2xl font-bold">Task Tracker</h1>
             </div>
             <div className="mt-2 min-w-0 overflow-x-hidden">
               <TopTabsInline active="tasks" />
             </div>
           </div>
-          <Card className="shrink-0 border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60 w-[176px] sm:w-[200px] md:w-[220px]">
+          <Card className="shrink-0 border-0 shadow-xl rounded-3xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl 
+                          ring-1 ring-gray-200/50 dark:ring-gray-600/50 w-[176px] sm:w-[200px] md:w-[220px] 
+                          hover:shadow-2xl transition-all duration-300">
             <CardContent className="p-3 sm:p-3 md:p-4">
               <div className="h-28 sm:h-28 md:h-32">
                 <ResponsiveContainer width="100%" height="100%">
@@ -199,24 +172,27 @@ export default function Tasks() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-sm mt-1">{pct}% Completed</div>
+              <div className="text-center text-sm mt-1 font-semibold text-gray-700 dark:text-gray-200">{pct}% Completed</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Full-width task canvas */}
-        <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60 overflow-hidden">
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="border-0 shadow-xl rounded-3xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl 
+                        ring-1 ring-gray-200/50 dark:ring-gray-600/50 overflow-hidden hover:shadow-2xl transition-all duration-300">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r 
+                                from-white/50 to-gray-50/30 dark:from-neutral-800/50 dark:to-neutral-900/30 backdrop-blur-md
+                                border-b border-gray-200/60 dark:border-gray-600/40">
             <div>
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5" />
+                <CalendarDays className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                 {activeYear && activeTerm ? (
-                  <span>{activeYear.label} • {activeTerm.name}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100">{activeYear.label} • {activeTerm.name}</span>
                 ) : (
-                  <span>Current Term</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100">Current Term</span>
                 )}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
             </div>
@@ -224,22 +200,38 @@ export default function Tasks() {
               <Dialog open={termDialogOpen} onOpenChange={setTermDialogOpen}>
                 <Button
                   variant="outline"
-                  className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/60"
+                  className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-gray-800/80 dark:to-gray-900/70 
+                            text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 
+                            hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                            border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30
+                            transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
                   onClick={() => setTermDialogOpen(true)}
                 >
                   {activeYear && activeTerm ? `${activeYear.label} • ${activeTerm.name}` : "Select Term"}
                 </Button>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md rounded-3xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
+                                          ring-1 ring-gray-200/50 dark:ring-gray-600/50">
                   <DialogHeader>
-                    <DialogTitle>Select School Year • Term</DialogTitle>
+                    <DialogTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">Select School Year • Term</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 max-h-[60vh] overflow-auto">
                     {years.map((y) => (
-                      <div key={y.id} className="rounded-xl border p-2">
-                        <div className="text-sm font-medium mb-2">{y.label}</div>
+                      <div key={y.id} className="rounded-2xl bg-gradient-to-r from-white/60 to-gray-50/40 dark:from-gray-800/60 dark:to-gray-900/40 
+                                                backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 p-4 shadow-md">
+                        <div className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-200">{y.label}</div>
                         <div className="flex flex-wrap gap-2">
                           {y.terms.map((t) => (
-                            <Button key={t.id} variant={y.id === activeYearId && t.id === activeTermId ? 'default' : 'outline'} className="rounded-xl" onClick={() => selectYearTerm(y.id, t.id)}>
+                            <Button 
+                              key={t.id} 
+                              variant={y.id === activeYearId && t.id === activeTermId ? 'default' : 'outline'} 
+                              className={`rounded-2xl transition-all duration-300 font-medium tracking-wide
+                                ${y.id === activeYearId && t.id === activeTermId 
+                                  ? "bg-gradient-to-r from-cyan-600/90 to-blue-600/90 dark:from-cyan-500/90 dark:to-blue-500/90 text-white shadow-lg ring-2 ring-cyan-200/50 dark:ring-cyan-400/30 backdrop-blur-md hover:from-cyan-700/95 hover:to-blue-700/95 dark:hover:from-cyan-400/95 dark:hover:to-blue-400/95" 
+                                  : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-gray-800/80 dark:to-gray-900/70 text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30"
+                                }
+                                hover:scale-102 active:scale-98 hover:-translate-y-0.5 active:translate-y-0`}
+                              onClick={() => selectYearTerm(y.id, t.id)}
+                            >
                               {t.name}
                             </Button>
                           ))}
@@ -249,27 +241,40 @@ export default function Tasks() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button size="sm" className="rounded-2xl" onClick={addRow}><Plus className="h-4 w-4 mr-1"/>Add Task</Button>
+              <Button 
+                size="sm" 
+                className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
+                          text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-md border-0
+                          hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                          transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                          font-medium tracking-wide" 
+                onClick={addRow}
+              >
+                <Plus className="h-4 w-4 mr-1"/>Add Task
+              </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm">
+          <CardContent className="p-6">
+            <div className="w-full overflow-x-auto rounded-2xl bg-gradient-to-r from-white/60 to-gray-50/40 dark:from-neutral-800/60 dark:to-neutral-900/40 
+                          backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 shadow-lg">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40">
+                <thead className="sticky top-0 bg-gradient-to-r from-white/80 to-gray-50/60 dark:from-neutral-800/80 dark:to-neutral-900/60 
+                                backdrop-blur-md border-b border-gray-200/60 dark:border-gray-600/40">
                   <tr className="text-left">
-                    <th className="p-3 w-[180px]">Course</th>
-                    <th className="p-3 w-[420px]">Assignment / To‑do</th>
-                    <th className="p-3 w-[150px]">Status</th>
-                    <th className="p-3 w-[140px]">Due Date</th>
-                    <th className="p-3 w-[110px]">Due Time</th>
-                    <th className="p-3 w-[110px]">Days Left</th>
-                    <th className="p-3 w-[90px]">Grade</th>
+                    <th className="p-4 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Course</th>
+                    <th className="p-4 w-[420px] font-semibold text-gray-700 dark:text-gray-200">Assignment / To‑do</th>
+                    <th className="p-4 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
+                    <th className="p-4 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Due Date</th>
+                    <th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Due Time</th>
+                    <th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Days Left</th>
+                    <th className="p-4 w-[90px] font-semibold text-gray-700 dark:text-gray-200">Grade</th>
+                    <th className="p-4 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayRows.map((r) => (
-                    <tr key={r.id} className="border-t border-black/5 dark:border-white/10">
-                      <td className="p-2">
+                    <tr key={r.id} className="border-t border-gray-200/40 dark:border-gray-600/30 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
+                      <td className="p-3">
                         <Select value={r.courseId ?? ""} onValueChange={(v) => {
                           if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
                             spawnFromPlaceholder(r.id, { courseId: v });
@@ -277,30 +282,48 @@ export default function Tasks() {
                             updateTask(r.id as string, { courseId: v });
                           }
                         }}>
-                          <SelectTrigger className="h-8 text-left"><SelectValue placeholder="Select course"/></SelectTrigger>
-                          <SelectContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-black/10 dark:border-white/10">
+                          <SelectTrigger className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                                   focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                                                   transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200">
+                            <SelectValue placeholder="Select course"/>
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
+                                                   ring-1 ring-gray-200/50 dark:ring-gray-600/50">
                             {termCourses.length === 0 && (
                               <SelectItem value="__no_courses__" disabled>No courses</SelectItem>
                             )}
                             {termCourses.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
+                              <SelectItem 
+                                key={c.id} 
+                                value={c.id}
+                                className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
+                                          focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
+                                          transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
+                              >
                                 {c.code || c.name || 'Untitled'}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-2">
-                        <Input className="h-8" value={r.title} onChange={(e) => {
-                          const val = e.target.value;
-                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                            spawnFromPlaceholder(r.id, { title: val });
-                          } else {
-                            updateTask(r.id as string, { title: val });
-                          }
-                        }} placeholder="Assignment title" />
+                      <td className="p-3">
+                        <Input 
+                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          value={r.title} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                              spawnFromPlaceholder(r.id, { title: val });
+                            } else {
+                              updateTask(r.id as string, { title: val });
+                            }
+                          }} 
+                          placeholder="Assignment title" 
+                        />
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         <Select value={r.status} onValueChange={(v) => {
                           const st = v as TaskStatus;
                           if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
@@ -309,51 +332,99 @@ export default function Tasks() {
                             updateTask(r.id as string, { status: st });
                           }
                         }}>
-                          <SelectTrigger className="h-8 text-left"><SelectValue placeholder="Status"/></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Not Started">Not Started</SelectItem>
-                            <SelectItem value="In Progress">In Progress</SelectItem>
-                            <SelectItem value="Completed">Completed</SelectItem>
+                          <SelectTrigger className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                                   focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                                                   transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200">
+                            <SelectValue placeholder="Status"/>
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
+                                                   ring-1 ring-gray-200/50 dark:ring-gray-600/50">
+                            <SelectItem value="Not Started" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
+                                                                      focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
+                                                                      transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">Not Started</SelectItem>
+                            <SelectItem value="In Progress" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
+                                                                     focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
+                                                                     transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">In Progress</SelectItem>
+                            <SelectItem value="Completed" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
+                                                                    focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
+                                                                    transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">Completed</SelectItem>
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-2">
-                        <Input className="h-8" type="date" value={r.dueDate || ""} onChange={(e) => {
-                          const val = e.target.value;
-                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                            spawnFromPlaceholder(r.id, { dueDate: val });
-                          } else {
-                            updateTask(r.id as string, { dueDate: val });
-                          }
-                        }} />
+                      <td className="p-3">
+                        <Input 
+                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          type="date" 
+                          value={r.dueDate || ""} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                              spawnFromPlaceholder(r.id, { dueDate: val });
+                            } else {
+                              updateTask(r.id as string, { dueDate: val });
+                            }
+                          }} 
+                        />
                       </td>
-                      <td className="p-2">
-                        <Input className="h-8" type="time" value={r.dueTime || ""} onChange={(e) => {
-                          const val = e.target.value;
-                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                            spawnFromPlaceholder(r.id, { dueTime: val });
-                          } else {
-                            updateTask(r.id as string, { dueTime: val });
-                          }
-                        }} />
+                      <td className="p-3">
+                        <Input 
+                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          type="time" 
+                          value={r.dueTime || ""} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                              spawnFromPlaceholder(r.id, { dueTime: val });
+                            } else {
+                              updateTask(r.id as string, { dueTime: val });
+                            }
+                          }} 
+                        />
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         {(() => {
                           const d = getDaysLeft(r.dueDate);
-                          if (d === undefined) return <span className="text-muted-foreground">—</span>;
-                          const cls = d < 0 ? "text-red-500" : d === 0 ? "text-amber-600" : "";
+                          if (d === undefined) return <span className="text-gray-400 dark:text-gray-500">—</span>;
+                          const cls = d < 0 ? "text-red-500 font-semibold" : d === 0 ? "text-amber-600 font-semibold" : "text-gray-600 dark:text-gray-300";
                           return <span className={cls}>{d}d</span>;
                         })()}
                       </td>
-                      <td className="p-2">
-                        <Input className="h-8" value={r.grade || ""} onChange={(e) => {
-                          const val = e.target.value;
-                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                            spawnFromPlaceholder(r.id, { grade: val });
-                          } else {
-                            updateTask(r.id as string, { grade: val });
-                          }
-                        }} />
+                      <td className="p-3">
+                        <Input 
+                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
+                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          value={r.grade || ""} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                              spawnFromPlaceholder(r.id, { grade: val });
+                            } else {
+                              updateTask(r.id as string, { grade: val });
+                            }
+                          }} 
+                        />
+                      </td>
+                      <td className="p-3">
+                        {/* Only show delete button for actual tasks, not placeholders, and only if task has content */}
+                        {typeof r.id === 'string' && !r.id.startsWith('ph:') && (r.title?.trim() || r.courseId) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-lg 
+                                      text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400
+                                      hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-200
+                                      focus:text-red-500 dark:focus:text-red-400"
+                            onClick={() => removeTask(r.id as string)}
+                            title="Delete task"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
                       </td>
                     </tr>
                   ))}

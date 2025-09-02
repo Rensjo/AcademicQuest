@@ -123,7 +123,7 @@ export default function Settings() {
 								<h1 className="text-2xl font-bold">Settings</h1>
 							</div>
 							<div className="mt-1">
-								<TopTabsInline />
+								<TopTabsInline active="settings" />
 							</div>
 						</div>
 						<div className="flex items-center gap-2 min-w-[220px] justify-end">

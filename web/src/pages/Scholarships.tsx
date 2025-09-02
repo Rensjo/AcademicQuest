@@ -137,10 +137,10 @@ export default function Scholarships() {
 						<div className="flex items-center gap-3 flex-wrap">
 							<CalendarDays className="h-5 w-5" />
 							<h1 className="text-2xl font-bold">Scholarships</h1>
-							<TopTabsInline />
+							<TopTabsInline active="scholarships" />
 						</div>
 					</div>
-					<Card className="shrink-0 border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60 w-[200px] sm:w-[220px]">
+					<Card className="shrink-0 shadow-xl rounded-3xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-md border border-white/20 dark:border-gray-600/20 w-[200px] sm:w-[220px]">
 						<CardContent className="p-4">
 							<div className="h-32">
 								<ResponsiveContainer width="100%" height="100%">
@@ -161,33 +161,42 @@ export default function Scholarships() {
 				</div>
 
 				{/* Table card */}
-				<Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between mb-3">
-							<div className="text-sm font-semibold">Applications</div>
-							<Button size="sm" className="rounded-2xl" onClick={addRow}><Plus className="h-4 w-4 mr-1"/>Add Scholarship</Button>
+				<Card className="shadow-xl rounded-3xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-md border border-white/20 dark:border-gray-600/20">
+					<CardContent className="p-6">
+						<div className="flex items-center justify-between mb-6">
+							<div className="text-lg font-semibold text-gray-700 dark:text-gray-200">Applications</div>
+							<Button 
+								size="sm" 
+								className="rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-500 dark:to-emerald-500 
+										  hover:from-green-700 hover:to-emerald-700 dark:hover:from-green-400 dark:hover:to-emerald-400 
+										  text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium tracking-wide
+										  border-0 backdrop-blur-sm" 
+								onClick={addRow}
+							>
+								<Plus className="h-4 w-4 mr-1"/>Add Scholarship
+							</Button>
 						</div>
-						<div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm">
+						<div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm backdrop-blur-sm">
 							<table className="w-full text-sm">
-								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40">
+								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40 border-b border-black/10 dark:border-white/10">
 									<tr className="text-left">
-										<th className="p-3 w-[50px]"></th>
-										<th className="p-3 w-[170px]">Status</th>
-										<th className="p-3 w-[260px]">Scholarship Name</th>
-										<th className="p-3 w-[180px]">Location</th>
-										<th className="p-3 w-[140px]">Date Due</th>
-										<th className="p-3 w-[110px]">Days Left</th>
-										<th className="p-3 w-[150px]">Date Submitted</th>
-										<th className="p-3 w-[110px]">Resume</th>
-										<th className="p-3 w-[90px]">Essay</th>
-										<th className="p-3 w-[150px]">Other Documents</th>
-										<th className="p-3 w-[160px]">Amount Awarded</th>
+										<th className="p-4 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
+										<th className="p-4 w-[170px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
+										<th className="p-4 w-[260px] font-semibold text-gray-700 dark:text-gray-200">Scholarship Name</th>
+										<th className="p-4 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Location</th>
+										<th className="p-4 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Date Due</th>
+										<th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Days Left</th>
+										<th className="p-4 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Date Submitted</th>
+										<th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Resume</th>
+										<th className="p-4 w-[90px] font-semibold text-gray-700 dark:text-gray-200">Essay</th>
+										<th className="p-4 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Other Documents</th>
+										<th className="p-4 w-[160px] font-semibold text-gray-700 dark:text-gray-200">Amount Awarded</th>
 									</tr>
 								</thead>
 								<tbody>
 									{rows.map((r) => (
-										<tr key={r.id} className="border-t border-black/5 dark:border-white/10">
-											<td className="p-2">
+										<tr key={r.id} className="border-t border-black/5 dark:border-white/10 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
+											<td className="p-3">
 												<Button
 													variant="ghost"
 													size="icon"
@@ -198,20 +207,51 @@ export default function Scholarships() {
 													<Trash2 className="h-4 w-4 bg-white/80 dark:bg-neutral-900/60 border-black/10" />
 												</Button>
 											</td>
-											<td className="p-2">
+											<td className="p-3">
 												<Select value={r.status} onValueChange={(v) => setRow(r.id, { status: v as Status })}>
-													<SelectTrigger className="h-8 text-left"><SelectValue placeholder="Status"/></SelectTrigger>
-													<SelectContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-black/10 dark:border-white/10">
+													<SelectTrigger className="h-10 text-left rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+																			  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+																			  transition-all duration-200 backdrop-blur-sm">
+														<SelectValue placeholder="Status"/>
+													</SelectTrigger>
+													<SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-600/30 rounded-xl shadow-lg">
 														{(['Received','Applied','In-Progress','Rejected','Not Started'] as Status[]).map(s => (
 															<SelectItem key={s} value={s}>{s}</SelectItem>
 														))}
 													</SelectContent>
 												</Select>
 											</td>
-											<td className="p-2"><Input className="h-8" value={r.name} onChange={(e) => setRow(r.id, { name: e.target.value })} placeholder="Scholarship name"/></td>
-											<td className="p-2"><Input className="h-8" value={r.location} onChange={(e) => setRow(r.id, { location: e.target.value })} placeholder="Location"/></td>
-											<td className="p-2"><Input className="h-8" type="date" value={r.dueDate || ''} onChange={(e) => setRow(r.id, { dueDate: e.target.value })}/></td>
-											<td className="p-2">
+											<td className="p-3">
+												<Input 
+													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+													value={r.name} 
+													onChange={(e) => setRow(r.id, { name: e.target.value })} 
+													placeholder="Scholarship name"
+												/>
+											</td>
+											<td className="p-3">
+												<Input 
+													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+													value={r.location} 
+													onChange={(e) => setRow(r.id, { location: e.target.value })} 
+													placeholder="Location"
+												/>
+											</td>
+											<td className="p-3">
+												<Input 
+													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+													type="date" 
+													value={r.dueDate || ''} 
+													onChange={(e) => setRow(r.id, { dueDate: e.target.value })}
+												/>
+											</td>
+											<td className="p-3">
 												{(() => {
 													const d = daysLeft(r.dueDate)
 													if (d === undefined) return <span className="text-muted-foreground">—</span>
@@ -219,8 +259,17 @@ export default function Scholarships() {
 													return <span className={cls}>{d}d</span>
 												})()}
 											</td>
-											<td className="p-2"><Input className="h-8" type="date" value={r.submittedDate || ''} onChange={(e) => setRow(r.id, { submittedDate: e.target.value })}/></td>
-											<td className="p-2">
+											<td className="p-3">
+												<Input 
+													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+													type="date" 
+													value={r.submittedDate || ''} 
+													onChange={(e) => setRow(r.id, { submittedDate: e.target.value })}
+												/>
+											</td>
+											<td className="p-3">
 												<Button
 													variant="link"
 													size="sm"
@@ -232,7 +281,7 @@ export default function Scholarships() {
 													{r.resume ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 												</Button>
 											</td>
-											<td className="p-2">
+											<td className="p-3">
 												<Button
 													variant="link"
 													size="sm"
@@ -244,7 +293,7 @@ export default function Scholarships() {
 													{r.essay ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 												</Button>
 											</td>
-											<td className="p-2">
+											<td className="p-3">
 												<Button
 													variant="link"
 													size="sm"
@@ -256,12 +305,21 @@ export default function Scholarships() {
 													{r.otherDocs ? `${r.otherDocsPaths?.length ?? 0} file(s)` : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 												</Button>
 											</td>
-											<td className="p-2">
+											<td className="p-3">
 												<div className="flex items-center gap-2">
 													<span className="text-muted-foreground w-10 text-right">
 														{new Intl.NumberFormat(undefined, { style: 'currency', currency: settings.preferredCurrency }).formatToParts(0).find(p => p.type === 'currency')?.value}
 													</span>
-													<Input className="h-8" type="number" step="0.01" value={r.amountAwarded ?? ''} onChange={(e) => setRow(r.id, { amountAwarded: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0.00"/>
+													<Input 
+														className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+																  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+																  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+														type="number" 
+														step="0.01" 
+														value={r.amountAwarded ?? ''} 
+														onChange={(e) => setRow(r.id, { amountAwarded: e.target.value === '' ? undefined : Number(e.target.value) })} 
+														placeholder="0.00"
+													/>
 												</div>
 											</td>
 										</tr>

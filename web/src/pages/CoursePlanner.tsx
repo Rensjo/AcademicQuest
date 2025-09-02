@@ -12,37 +12,8 @@ import { saveToOPFS, getOPFSFileURL } from "@/lib/opfs";
 import { Plus, CalendarDays, Save as SaveIcon } from "lucide-react";
 // themed gradient like other pages
 import { useTheme, PALETTES } from "@/store/theme";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
-// simple tabs beside title (same pattern you use elsewhere)
-function TopTabsInline() {
-  const navigate = useNavigate();
-  const tabs = [
-    { label: "Dashboard", path: "/" },
-    { label: "Academic Planner", path: "/planner" },
-    { label: "Task Tracker", path: "/tasks" },
-    { label: "Schedule Planner", path: "/schedule" },
-    { label: "Course Planner", path: "/courses", active: true },
-    { label: "Scholarships", path: "/scholarships" },
-    { label: "Textbooks", path: "/textbooks" },
-    { label: "Settings", path: "/settings" },
-  ];
-  return (
-    <div className="flex items-center gap-2 flex-nowrap">
-      {tabs.map((t) => (
-        <Button
-          key={t.label}
-          variant={t.active ? "default" : "outline"}
-          className={`h-9 rounded-full ${t.active ? "" : "bg-white/70 dark:bg-neutral-900/60"}`}
-          onClick={() => navigate(t.path)}
-        >
-          {t.label}
-        </Button>
-      ))}
-    </div>
-  );
-}
+import TopTabsInline from "@/components/TopTabsInline";
 
 // week checkbox helper
 const DAYS = ["S", "M", "T", "W", "Th", "F", "S2"] as const;
@@ -331,7 +302,7 @@ export default function CoursePlanner() {
             <h1 className="text-2xl font-bold">Course Planner</h1>
           </div>
           <div className="mt-2 pr-56">
-            <TopTabsInline />
+            <TopTabsInline active="courses" />
           </div>
 
           {/* Course switcher controls positioned above at top-right */}

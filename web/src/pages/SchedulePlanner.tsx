@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Add scrollbar styles
 const scrollbarStyles = `
@@ -141,116 +148,215 @@ function BlockDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{d.id ? "Edit Block" : "Add Block"}</DialogTitle>
+      <DialogContent className="max-w-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+        <DialogHeader className="pb-6 border-b border-gray-200/50 dark:border-gray-700/50">
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2">
+            {d.id ? (
+              <>
+                <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Block
+              </>
+            ) : (
+              <>
+                <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add New Block
+              </>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
-            <Label className="text-xs">Agenda / Course name</Label>
-            <Input
-              value={d.title}
-              onChange={(e) => setD({ ...d, title: e.target.value })}
-              placeholder="e.g., Algorithms (LEC)"
-            />
-          </div>
+        <div className="py-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Course / Agenda Name
+              </Label>
+              <Input
+                value={d.title}
+                onChange={(e) => setD({ ...d, title: e.target.value })}
+                placeholder="e.g., Algorithms (LEC)"
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
 
-          <div>
-            <Label className="text-xs">Course code</Label>
-            <Input
-              value={d.courseCode ?? ""}
-              onChange={(e) => setD({ ...d, courseCode: e.target.value })}
-              placeholder="e.g., CS101"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Room</Label>
-            <Input
-              value={d.room ?? ""}
-              onChange={(e) => setD({ ...d, room: e.target.value })}
-              placeholder="e.g., B402"
-            />
-          </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Course Code
+              </Label>
+              <Input
+                value={d.courseCode ?? ""}
+                onChange={(e) => setD({ ...d, courseCode: e.target.value })}
+                placeholder="e.g., CS101"
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Room
+              </Label>
+              <Input
+                value={d.room ?? ""}
+                onChange={(e) => setD({ ...d, room: e.target.value })}
+                placeholder="e.g., B402"
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
 
-          <div>
-            <Label className="text-xs">Building</Label>
-            <Input
-              value={d.building ?? ""}
-              onChange={(e) => setD({ ...d, building: e.target.value })}
-              placeholder="e.g., Eng Hall"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Link (optional)</Label>
-            <Input
-              value={d.link ?? ""}
-              onChange={(e) => setD({ ...d, link: e.target.value })}
-              placeholder="https://..."
-            />
-          </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Building
+              </Label>
+              <Input
+                value={d.building ?? ""}
+                onChange={(e) => setD({ ...d, building: e.target.value })}
+                placeholder="e.g., Engineering Hall"
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Link <span className="text-gray-500 text-xs">(optional)</span>
+              </Label>
+              <Input
+                value={d.link ?? ""}
+                onChange={(e) => setD({ ...d, link: e.target.value })}
+                placeholder="https://..."
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
 
-          <div>
-            <Label className="text-xs">Day</Label>
-            <select
-              className="mt-1 h-9 w-full rounded-xl border border-black/10 bg-white dark:bg-neutral-900 px-3"
-              value={d.day}
-              onChange={(e) => setD({ ...d, day: Number(e.target.value) as DayIndex })}
-            >
-              {DAYS.map((name, idx) => (
-                <option value={idx} key={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Day
+              </Label>
+              <Select
+                value={d.day.toString()}
+                onValueChange={(value) => setD({ ...d, day: Number(value) as DayIndex })}
+              >
+                <SelectTrigger className="h-11 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                        focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                                        transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200
+                                        shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]">
+                  <SelectValue placeholder="Select a day" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-800/95 backdrop-blur-xl border-0 shadow-2xl 
+                                         ring-1 ring-gray-200/50 dark:ring-gray-600/50">
+                  {DAYS.map((name, idx) => (
+                    <SelectItem 
+                      key={name} 
+                      value={idx.toString()}
+                      className="rounded-xl mx-1 my-0.5 focus:bg-green-50/90 dark:focus:bg-emerald-950/30 
+                                focus:text-green-700 dark:focus:text-emerald-300 cursor-pointer
+                                transition-all duration-200 hover:bg-green-50/50 dark:hover:bg-emerald-950/20"
+                    >
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <Label className="text-xs">Start</Label>
-            <Input
-              type="time"
-              value={d.start}
-              onChange={(e) => setD({ ...d, start: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label className="text-xs">End</Label>
-            <Input
-              type="time"
-              value={d.end}
-              onChange={(e) => setD({ ...d, end: e.target.value })}
-            />
-          </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Start Time
+              </Label>
+              <Input
+                type="time"
+                value={d.start}
+                onChange={(e) => setD({ ...d, start: e.target.value })}
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                End Time
+              </Label>
+              <Input
+                type="time"
+                value={d.end}
+                onChange={(e) => setD({ ...d, end: e.target.value })}
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-green-400/60 dark:focus:border-emerald-400/60 focus:ring-2 focus:ring-green-200/50 dark:focus:ring-emerald-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
 
-          <div className="col-span-2">
-            <Label className="text-xs">Color</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setD({ ...d, color: c })}
-                  className={`h-7 w-7 rounded-lg border ${
-                    d.color === c ? "ring-2 ring-black/20" : "border-black/10"
-                  }`}
-                  style={{ background: c }}
-                  title={c}
-                />
-              ))}
+            <div className="col-span-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
+                Color Theme
+              </Label>
+              <div className="flex flex-wrap gap-3">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setD({ ...d, color: c })}
+                    className={`h-10 w-10 rounded-2xl border-2 transition-all duration-300 hover:scale-110 active:scale-95 ${
+                      d.color === c 
+                        ? "ring-4 ring-gray-400/50 dark:ring-gray-300/50 border-white dark:border-neutral-800 shadow-lg" 
+                        : "border-gray-200/60 dark:border-gray-600/40 hover:border-gray-300/80 dark:hover:border-gray-500/60 shadow-md hover:shadow-lg"
+                    }`}
+                    style={{ background: c }}
+                    title={c}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="mt-4">
+        <DialogFooter className="pt-6 border-t border-gray-200/50 dark:border-gray-700/50 flex gap-3">
           {onDelete && (
-            <Button variant="destructive" onClick={onDelete}>
+            <Button 
+              variant="destructive" 
+              onClick={onDelete}
+              className="rounded-2xl bg-gradient-to-r from-red-600/90 to-red-700/90 dark:from-red-500/90 dark:to-red-600/90
+                        hover:from-red-700/95 hover:to-red-800/95 dark:hover:from-red-400/95 dark:hover:to-red-500/95
+                        text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                        hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                        font-medium tracking-wide backdrop-blur-md
+                        ring-2 ring-red-200/50 dark:ring-red-400/30 hover:ring-red-300/60 dark:hover:ring-red-300/40"
+            >
               <Trash2 className="h-4 w-4 mr-2" /> Delete
             </Button>
           )}
           <div className="flex-1" />
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                      text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
+                      shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40
+                      transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
+          >
             Cancel
           </Button>
-          <Button onClick={() => onSave(d)}>{d.id ? "Save" : "Add"}</Button>
+          <Button 
+            onClick={() => onSave(d)}
+            className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90
+                      hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                      text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                      hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                      font-medium tracking-wide backdrop-blur-md
+                      ring-2 ring-green-200/50 dark:ring-green-400/30 hover:ring-green-300/60 dark:hover:ring-green-300/40"
+          >
+            {d.id ? "Save Changes" : "Add Block"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -277,26 +383,60 @@ function TermRangeButton({
 
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className="rounded-2xl">
+      <Button 
+        variant="outline" 
+        onClick={() => setOpen(true)} 
+        className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                  text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-sky-50/80 dark:hover:from-cyan-950/40 dark:hover:to-sky-950/30 
+                  hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                  border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30
+                  transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                  font-medium tracking-wide"
+      >
         {start && end ? `${start} — ${end}` : "Set Term Range"}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-3xl bg-white/95 dark:bg-neutral-800/95 backdrop-blur-xl border-0 shadow-2xl 
+                                  ring-1 ring-gray-200/50 dark:ring-gray-600/50">
           <DialogHeader>
-            <DialogTitle>Term Date Range</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Term Date Range</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Set the start and end dates for this academic term to enable schedule tracking.
+            </p>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Start</Label>
-              <Input type="date" value={s ?? ""} onChange={(ev) => setS(ev.target.value)} />
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</Label>
+              <Input 
+                type="date" 
+                value={s ?? ""} 
+                onChange={(ev) => setS(ev.target.value)}
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
             </div>
-            <div>
-              <Label className="text-xs">End</Label>
-              <Input type="date" value={e ?? ""} onChange={(ev) => setE(ev.target.value)} />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</Label>
+              <Input 
+                type="date" 
+                value={e ?? ""} 
+                onChange={(ev) => setE(ev.target.value)}
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                          transition-all duration-300 backdrop-blur-md"
+              />
             </div>
           </div>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+          <DialogFooter className="mt-6 gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                        text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
+                        shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40
+                        transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
+            >
               Cancel
             </Button>
             <Button
@@ -304,8 +444,14 @@ function TermRangeButton({
                 onSave(s, e);
                 setOpen(false);
               }}
+              className="rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
+                        hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
+                        text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                        hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                        font-medium tracking-wide backdrop-blur-md
+                        ring-2 ring-blue-200/50 dark:ring-blue-400/30 hover:ring-blue-300/60 dark:hover:ring-blue-300/40"
             >
-              Save
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -380,16 +526,49 @@ function TermColumnBody({ yearId, term }: { yearId: string; term: Term }) {
   }
 
   return (
-    <div className="space-y-3">
-      {/* Header: Title + date below; Actions on the right */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">{term.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {term.startDate || "—"} — {term.endDate || "—"}
+    <div className="space-y-4">
+      {/* Enhanced Header with Term Info */}
+      <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 
+                      dark:from-neutral-800/80 dark:to-neutral-900/70 border border-gray-200/60 dark:border-gray-600/40 
+                      shadow-md backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 
+                         dark:from-blue-900/40 dark:to-indigo-900/40">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
+              <path d="M8 2v4"/>
+              <path d="M16 2v4"/>
+              <rect width="18" height="18" x="3" y="4" rx="2"/>
+              <path d="M3 10h18"/>
+            </svg>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-gray-800 dark:text-gray-100">{term.name}</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {term.startDate && term.endDate ? (
+                <>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50/80 dark:bg-green-900/30 
+                                 text-green-700 dark:text-green-300 border border-green-200/60 dark:border-green-700/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                      <path d="M9 11l3 3L22 4"/>
+                    </svg>
+                    {term.startDate} — {term.endDate}
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50/80 dark:bg-amber-900/30 
+                               text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-700/40">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                  Dates not set
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <TermRangeButton
             start={term.startDate}
             end={term.endDate}
@@ -414,6 +593,12 @@ function TermColumnBody({ yearId, term }: { yearId: string; term: Term }) {
                 setOpen(true);
               }}
               title={!hasDateRange ? "Please set term dates first" : "Add new block"}
+              className="bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                        text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                        hover:text-green-700 dark:hover:text-emerald-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                        border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
+                        transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                        font-medium tracking-wide rounded-2xl"
             >
               <Plus className="h-4 w-4 mr-1" /> Add Block
             </Button>
@@ -435,14 +620,46 @@ function TermColumnBody({ yearId, term }: { yearId: string; term: Term }) {
         <CardContent className="p-0 relative">
           {/* Date Range Required Overlay */}
           {!hasDateRange && (
-            <div className="absolute inset-0 bg-black/5 dark:bg-black/20 backdrop-blur-[1px] z-10 flex items-center justify-center">
-              <div className="bg-white/90 dark:bg-neutral-900/90 p-5 rounded-xl shadow-lg max-w-md text-center">
-                <h3 className="text-lg font-semibold mb-2">Set Term Dates First</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  To add classes to your schedule and see them in today's dashboard, 
-                  you must set the term date range first.
-                </p>
-                <Button onClick={() => setDateDialogOpen(true)}>
+            <div className="absolute inset-0 bg-black/5 dark:bg-black/20 backdrop-blur-sm z-10 flex items-center justify-center p-4">
+              <div className="bg-white/95 dark:bg-neutral-900/95 p-8 rounded-3xl shadow-2xl max-w-md text-center backdrop-blur-xl
+                            border border-gray-200/60 dark:border-gray-600/40 ring-1 ring-gray-100/50 dark:ring-gray-700/50">
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 
+                                dark:from-blue-900/40 dark:to-indigo-900/40 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
+                      <path d="M8 2v4"/>
+                      <path d="M16 2v4"/>
+                      <rect width="18" height="18" x="3" y="4" rx="2"/>
+                      <path d="M3 10h18"/>
+                      <path d="M8 14h.01"/>
+                      <path d="M12 14h.01"/>
+                      <path d="M16 14h.01"/>
+                      <path d="M8 18h.01"/>
+                      <path d="M12 18h.01"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-3">Set Term Dates First</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    To add classes to your schedule and see them in today's dashboard, 
+                    you must set the term date range first. This ensures proper scheduling 
+                    and course tracking throughout the semester.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setDateDialogOpen(true)}
+                  className="rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
+                            hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
+                            text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                            hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                            font-medium tracking-wide backdrop-blur-md px-6 py-3
+                            ring-2 ring-blue-200/50 dark:ring-blue-400/30 hover:ring-blue-300/60 dark:hover:ring-blue-300/40"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                    <path d="M8 2v4"/>
+                    <path d="M16 2v4"/>
+                    <rect width="18" height="18" x="3" y="4" rx="2"/>
+                    <path d="M3 10h18"/>
+                  </svg>
                   Set Term Dates
                 </Button>
               </div>
@@ -573,45 +790,70 @@ function TermColumnBody({ yearId, term }: { yearId: string; term: Term }) {
 
             {/* Term Date Dialog */}
       <Dialog open={dateDialogOpen} onOpenChange={setDateDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-3xl bg-white/95 dark:bg-neutral-800/95 backdrop-blur-xl border-0 shadow-2xl 
+                                  ring-1 ring-gray-200/50 dark:ring-gray-600/50">
           <DialogHeader>
-            <DialogTitle>Set Term Date Range</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Set Term Date Range</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 text-center">
-            <div className="text-amber-600 dark:text-amber-500 mb-2 flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-              Required Step
+          <div className="space-y-4 text-center mb-6">
+            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-amber-50/80 dark:bg-amber-900/30 
+                            border border-amber-200/60 dark:border-amber-700/40 text-amber-700 dark:text-amber-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar-clock">
+                <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/>
+                <path d="M16 2v4"/>
+                <path d="M8 2v4"/>
+                <path d="M3 10h5"/>
+                <circle cx="16" cy="16" r="6"/>
+                <path d="M16 14v2l1 1"/>
+              </svg>
+              <span className="font-medium text-sm">Required for Schedule Tracking</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Setting the term dates is required to properly display classes in your Today's Schedule dashboard.
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Setting the term dates enables proper class scheduling and ensures your courses 
+              appear correctly in the Today's Schedule dashboard.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Start Date</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</Label>
               <Input 
                 type="date" 
                 value={term.startDate || ""} 
                 onChange={(ev) => setTermDates(yearId, term.id, ev.target.value, term.endDate)}
                 required
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                          transition-all duration-300 backdrop-blur-md"
               />
             </div>
-            <div>
-              <Label className="text-xs">End Date</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</Label>
               <Input 
                 type="date" 
                 value={term.endDate || ""} 
                 onChange={(ev) => setTermDates(yearId, term.id, term.startDate, ev.target.value)}
                 required
+                className="rounded-2xl h-11 bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                          focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                          transition-all duration-300 backdrop-blur-md"
               />
             </div>
           </div>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-6">
             <Button 
               onClick={() => setDateDialogOpen(false)}
               disabled={!term.startDate || !term.endDate}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
+                        hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
+                        disabled:from-gray-400/80 disabled:to-gray-500/80 dark:disabled:from-gray-600/80 dark:disabled:to-gray-700/80
+                        text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                        hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                        disabled:hover:scale-100 disabled:hover:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed
+                        font-medium tracking-wide backdrop-blur-md h-12
+                        ring-2 ring-blue-200/50 dark:ring-blue-400/30 hover:ring-blue-300/60 dark:hover:ring-blue-300/40
+                        disabled:ring-gray-300/30 dark:disabled:ring-gray-600/30"
             >
-              Save & Continue
+              {term.startDate && term.endDate ? 'Save & Continue' : 'Set Both Dates to Continue'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -647,7 +889,12 @@ function TopTabsInline() {
         <Button
           key={t.label}
           variant={t.active ? "default" : "outline"}
-          className={`h-9 rounded-full ${t.active ? "" : "bg-white/70 dark:bg-neutral-900/60"}`}
+          className={`h-9 rounded-full transition-all duration-300 font-medium tracking-wide
+            ${t.active 
+              ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-md hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
+              : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
+            }
+            hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0`}
           onClick={() => navigate(t.path)}
         >
           {t.label}
@@ -664,6 +911,7 @@ export default function SchedulePlanner() {
   const yearRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
   const setSelectedYear = useSchedule((s) => s.setSelectedYear);
   const addYear = useSchedule((s) => s.addYear);
+  const removeYear = useSchedule((s) => s.removeYear);
   const setTermsCount = useSchedule((s) => s.setTermsCount);
 
   const activeYearId = selectedYearId || years[0]?.id;
@@ -671,6 +919,10 @@ export default function SchedulePlanner() {
 
   // year chooser button (top-right)
   const [yearOpen, setYearOpen] = React.useState(false);
+  
+  // delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+  const [yearToDelete, setYearToDelete] = React.useState<{id: string, label: string} | null>(null);
 
   // directly under your existing hooks (years, selectedYearId, etc.)
   const theme = useTheme();
@@ -730,7 +982,12 @@ export default function SchedulePlanner() {
 
           <Button
             variant="outline"
-            className="rounded-2xl"
+            className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                      text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                      hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                      border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
+                      transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                      font-medium tracking-wide"
             onClick={() => setYearOpen(true)}
             title="Select school year"
           >
@@ -739,39 +996,64 @@ export default function SchedulePlanner() {
 
           {/* Year chooser dialog */}
           <Dialog open={yearOpen} onOpenChange={setYearOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Select School Year</DialogTitle>
+            <DialogContent className="max-w-lg bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+              <DialogHeader className="pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                  Select School Year
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-2 max-h-64 overflow-auto">
+              <div className="space-y-4 max-h-80 overflow-auto py-3 px-1">
                 {years.length === 0 ? (
-                  <div className="text-sm text-muted-foreground p-2">
+                  <div className="text-sm text-muted-foreground p-4 text-center bg-gray-50/50 dark:bg-neutral-800/50 rounded-xl">
                     No school years added yet. Add your first school year below.
                   </div>
                 ) : (
                   years.map((y) => (
-                    <Button
-                      key={y.id}
-                      variant={y.id === activeYearId ? "default" : "outline"}
-                      className="w-full justify-start rounded-xl"
-                      onClick={() => {
-                        setSelectedYear(y.id);
-                        setYearOpen(false);
-                        // Scroll to the selected year
-                        setTimeout(() => {
-                          yearRefs.current[y.id]?.scrollIntoView({ 
-                            behavior: 'smooth',
-                            block: 'start' 
-                          });
-                        }, 10);
-                      }}
-                    >
-                      {y.label}
-                    </Button>
+                    <div key={y.id} className="flex items-center gap-3 group px-1">
+                      <Button
+                        variant={y.id === activeYearId ? "default" : "outline"}
+                        className={`flex-1 justify-start rounded-2xl transition-all duration-300 font-medium tracking-wide h-12
+                          ${y.id === activeYearId 
+                            ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-md hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
+                            : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
+                          }
+                          hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0`}
+                        onClick={() => {
+                          setSelectedYear(y.id);
+                          setYearOpen(false);
+                          // Scroll to the selected year
+                          setTimeout(() => {
+                            yearRefs.current[y.id]?.scrollIntoView({ 
+                              behavior: 'smooth',
+                              block: 'start' 
+                            });
+                          }, 10);
+                        }}
+                      >
+                        {y.label}
+                      </Button>
+                      {years.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-12 w-12 p-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 
+                                    hover:bg-red-50/50 dark:hover:bg-red-950/30 rounded-2xl transition-all duration-300
+                                    opacity-0 group-hover:opacity-100 hover:scale-105 active:scale-95
+                                    ring-1 ring-red-200/50 dark:ring-red-800/50 hover:ring-red-300/60 dark:hover:ring-red-700/60"
+                          onClick={() => {
+                            setYearToDelete({id: y.id, label: y.label});
+                            setDeleteConfirmOpen(true);
+                          }}
+                          title={`Delete ${y.label}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
-              <DialogFooter className="mt-3">
+              <DialogFooter className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
                 <Button
                   onClick={() => {
                     const newLabel = getNextYearLabel();
@@ -785,8 +1067,67 @@ export default function SchedulePlanner() {
                       }
                     }, 10);
                   }}
+                  className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90
+                            hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                            text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                            hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                            font-medium tracking-wide backdrop-blur-md
+                            ring-2 ring-green-200/50 dark:ring-green-400/30 hover:ring-green-300/60 dark:hover:ring-green-300/40"
                 >
                   <Plus className="h-4 w-4 mr-1" /> Add School Year
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete confirmation dialog */}
+          <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <DialogContent className="max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+              <DialogHeader className="pb-4 border-b border-red-200/50 dark:border-red-800/50">
+                <DialogTitle className="text-xl font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" />
+                  Delete School Year
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                  Are you sure you want to delete <strong>{yearToDelete?.label}</strong>?
+                </p>
+                <p className="text-sm text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/30 p-3 rounded-xl border border-red-200/50 dark:border-red-800/50">
+                  ⚠️ This will permanently delete all terms, courses, and schedules for this school year. This action cannot be undone.
+                </p>
+              </div>
+              <DialogFooter className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50 flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setYearToDelete(null);
+                  }}
+                  className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                            text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
+                            shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40
+                            transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (yearToDelete) {
+                      removeYear(yearToDelete.id);
+                      setDeleteConfirmOpen(false);
+                      setYearToDelete(null);
+                      setYearOpen(false);
+                    }
+                  }}
+                  className="rounded-2xl bg-gradient-to-r from-red-600/90 to-red-700/90 dark:from-red-500/90 dark:to-red-600/90
+                            hover:from-red-700/95 hover:to-red-800/95 dark:hover:from-red-400/95 dark:hover:to-red-500/95
+                            text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                            hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                            font-medium tracking-wide backdrop-blur-md
+                            ring-2 ring-red-200/50 dark:ring-red-400/30 hover:ring-red-300/60 dark:hover:ring-red-300/40"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Delete
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -827,9 +1168,13 @@ export default function SchedulePlanner() {
                 <div className="ml-4 w-[120px] shrink-0 flex flex-col">
                   <div className="h-8 mb-12"></div>
                   <button
-                    className="w-full rounded-2xl border border-black/10 dark:border-white/10 
-                              bg-white/70 dark:bg-neutral-900/60 hover:bg-white/80 
-                              dark:hover:bg-neutral-800/60 transition"
+                    className="w-full rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                              text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                              hover:text-green-700 dark:hover:text-emerald-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                              border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
+                              transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                              disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
+                              disabled:hover:from-white/80 disabled:hover:to-gray-50/70 dark:disabled:hover:from-neutral-800/80 dark:disabled:hover:to-neutral-900/70"
                     style={{ 
                       height: GRID_PX + 56 - 32, // Canvas height minus padding (header=24px + weekday row=32px - section padding)
                     }}
@@ -837,7 +1182,7 @@ export default function SchedulePlanner() {
                     title={year.terms.length >= 4 ? "Max 4 terms" : "Add new term"}
                     disabled={year.terms.length >= 4}
                   >
-                    <span className="block rotate-90 whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-muted-foreground select-none">
+                    <span className="block rotate-90 whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide select-none">
                       + Add New Term
                     </span>
                   </button>
@@ -848,9 +1193,15 @@ export default function SchedulePlanner() {
           
           <div className="mt-4 pb-8">
             <Button
-              className="w-full h-24 rounded-2xl border border-black/10 dark:border-white/10 
-                        bg-white/70 dark:bg-neutral-900/60 hover:bg-white/80 
-                        dark:hover:bg-neutral-800/60 transition text-muted-foreground font-semibold"              onClick={() => {
+              className="w-full h-24 rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                        text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                        hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                        border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
+                        transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] hover:-translate-y-0.5 active:translate-y-0
+                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
+                        disabled:hover:from-white/80 disabled:hover:to-gray-50/70 dark:disabled:hover:from-neutral-800/80 dark:disabled:hover:to-neutral-900/70
+                        font-semibold tracking-wide"
+              onClick={() => {
                 const newLabel = getNextYearLabel();
                 console.log("Adding new year:", newLabel);
                 addYear(newLabel);
