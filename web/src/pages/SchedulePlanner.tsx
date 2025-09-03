@@ -339,10 +339,10 @@ function BlockDialog({
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
-            className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+            className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                       text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
-                      shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40
-                      transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
+                      shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40
+                      transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
           >
             Cancel
           </Button>
@@ -386,11 +386,11 @@ function TermRangeButton({
       <Button 
         variant="outline" 
         onClick={() => setOpen(true)} 
-        className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+        className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                   text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-sky-50/80 dark:hover:from-cyan-950/40 dark:hover:to-sky-950/30 
-                  hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                  hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                   border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30
-                  transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                  transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
                   font-medium tracking-wide"
       >
         {start && end ? `${start} — ${end}` : "Set Term Range"}
@@ -432,10 +432,10 @@ function TermRangeButton({
             <Button 
               variant="outline" 
               onClick={() => setOpen(false)}
-              className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+              className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                         text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
-                        shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40
-                        transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
+                        shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40
+                        transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
             >
               Cancel
             </Button>
@@ -593,11 +593,11 @@ function TermColumnBody({ yearId, term }: { yearId: string; term: Term }) {
                 setOpen(true);
               }}
               title={!hasDateRange ? "Please set term dates first" : "Add new block"}
-              className="bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+              className="bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                         text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
-                        hover:text-green-700 dark:hover:text-emerald-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                        hover:text-green-700 dark:hover:text-emerald-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                         border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
-                        transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                        transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
                         font-medium tracking-wide rounded-2xl"
             >
               <Plus className="h-4 w-4 mr-1" /> Add Block
@@ -889,10 +889,10 @@ function TopTabsInline() {
         <Button
           key={t.label}
           variant={t.active ? "default" : "outline"}
-          className={`h-9 rounded-full transition-all duration-300 font-medium tracking-wide
+          className={`h-9 rounded-full transition-all duration-200 font-medium tracking-wide text-xs
             ${t.active 
-              ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-md hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
-              : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
+              ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-sm hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
+              : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
             }
             hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0`}
           onClick={() => navigate(t.path)}
@@ -972,30 +972,33 @@ export default function SchedulePlanner() {
     <div className="min-h-screen w-full" style={bgStyle}>
       <style>{scrollbarStyles}</style>
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
-        {/* Top header: title + tabs on the left, school year chip on the right */}
+        {/* Top header: title on the left, school year chip on the right */}
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <CalendarDays className="h-5 w-5" />
-            <h1 className="text-2xl font-bold">Schedule Planner</h1>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5" />
+              <h1 className="text-2xl font-bold">Schedule Planner</h1>
+            </div>
             <TopTabsInline />
           </div>
 
           <Button
             variant="outline"
-            className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+            className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                       text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
-                      hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                      hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                       border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
-                      transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                      transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
                       font-medium tracking-wide"
             onClick={() => setYearOpen(true)}
             title="Select school year"
           >
             {year?.label || "Choose School Year"} <span className="ml-1 opacity-60">▼</span>
           </Button>
+        </div>
 
-          {/* Year chooser dialog */}
-          <Dialog open={yearOpen} onOpenChange={setYearOpen}>
+        {/* Year chooser dialog */}
+        <Dialog open={yearOpen} onOpenChange={setYearOpen}>
             <DialogContent className="max-w-lg bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
               <DialogHeader className="pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
                 <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
@@ -1012,10 +1015,10 @@ export default function SchedulePlanner() {
                     <div key={y.id} className="flex items-center gap-3 group px-1">
                       <Button
                         variant={y.id === activeYearId ? "default" : "outline"}
-                        className={`flex-1 justify-start rounded-2xl transition-all duration-300 font-medium tracking-wide h-12
+                        className={`flex-1 justify-start rounded-2xl transition-all duration-200 font-medium tracking-wide h-12
                           ${y.id === activeYearId 
-                            ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-md hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
-                            : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
+                            ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-sm hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
+                            : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
                           }
                           hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0`}
                         onClick={() => {
@@ -1104,10 +1107,10 @@ export default function SchedulePlanner() {
                     setDeleteConfirmOpen(false);
                     setYearToDelete(null);
                   }}
-                  className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                  className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                             text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
-                            shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40
-                            transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
+                            shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40
+                            transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium tracking-wide"
                 >
                   Cancel
                 </Button>
@@ -1168,13 +1171,13 @@ export default function SchedulePlanner() {
                 <div className="ml-4 w-[120px] shrink-0 flex flex-col">
                   <div className="h-8 mb-12"></div>
                   <button
-                    className="w-full rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                    className="w-full rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                               text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
-                              hover:text-green-700 dark:hover:text-emerald-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                              hover:text-green-700 dark:hover:text-emerald-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                               border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
-                              transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                              transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
                               disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
-                              disabled:hover:from-white/80 disabled:hover:to-gray-50/70 dark:disabled:hover:from-neutral-800/80 dark:disabled:hover:to-neutral-900/70"
+                              disabled:hover:from-white/95 disabled:hover:to-white/85 dark:disabled:hover:from-neutral-800/80 dark:disabled:hover:to-neutral-900/70"
                     style={{ 
                       height: GRID_PX + 56 - 32, // Canvas height minus padding (header=24px + weekday row=32px - section padding)
                     }}
@@ -1193,13 +1196,13 @@ export default function SchedulePlanner() {
           
           <div className="mt-4 pb-8">
             <Button
-              className="w-full h-24 rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+              className="w-full h-24 rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                         text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
-                        hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                        hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                         border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
-                        transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] hover:-translate-y-0.5 active:translate-y-0
+                        transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:-translate-y-0.5 active:translate-y-0
                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
-                        disabled:hover:from-white/80 disabled:hover:to-gray-50/70 dark:disabled:hover:from-neutral-800/80 dark:disabled:hover:to-neutral-900/70
+                        disabled:hover:from-white/95 disabled:hover:to-white/85 dark:disabled:hover:from-neutral-800/80 dark:disabled:hover:to-neutral-900/70
                         font-semibold tracking-wide"
               onClick={() => {
                 const newLabel = getNextYearLabel();
@@ -1220,6 +1223,5 @@ export default function SchedulePlanner() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

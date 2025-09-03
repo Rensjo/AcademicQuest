@@ -95,19 +95,19 @@ interface RowEditorProps {
  */
 function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
   return (
-    <div className="grid grid-cols-[30px_100px_1fr_90px_70px_70px] gap-3 items-center py-3">
+    <div className="grid grid-cols-[30px_100px_1fr_90px_70px_70px] gap-3 items-center px-2 py-2">
       {/* Remove row */}
       <Button 
         variant="outline" 
         size="icon" 
         onClick={onRemove} 
-        className="h-9 w-9 rounded-2xl
+        className="h-8 w-8 rounded-2xl
                   text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400
                   hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-200
                   focus:text-red-500 dark:focus:text-red-400"
         title="Remove course"
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2 className="h-3 w-3" />
       </Button>
 
       {/* Code */}
@@ -115,17 +115,17 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
         value={value.code} 
         onChange={(e) => onChange({ ...value, code: e.target.value })} 
         placeholder="Code"
-        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+        className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs"
       />
 
       {/* Course name (pill) */}
       <div className="flex">
         <input
-          className="flex-1 h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border border-gray-200/60 dark:border-gray-600/40 px-4
-                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200 outline-none
+          className="flex-1 h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border border-gray-200/60 dark:border-gray-600/40 px-4
+                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 outline-none text-xs
                     placeholder:text-gray-400 dark:placeholder:text-gray-500"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
@@ -138,9 +138,9 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
         value={value.section} 
         onChange={(e) => onChange({ ...value, section: e.target.value })} 
         placeholder="Sec."
-        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+        className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs"
       />
 
       {/* Credits */}
@@ -150,9 +150,9 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
         value={value.credits} 
         onChange={(e) => onChange({ ...value, credits: Number(e.target.value) || 0 })} 
         placeholder="Cr."
-        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+        className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs"
       />
 
       {/* GPA (0.00–4.00) */}
@@ -164,9 +164,9 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
         value={value.gpa ?? ""}
         onChange={(e) => onChange({ ...value, gpa: e.target.value === "" ? undefined : Number(e.target.value) })}
         placeholder="GPA"
-        className="h-10 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                  focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                  transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200"
+        className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs"
       />
     </div>
   );
@@ -226,21 +226,21 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
 
   return (
     <Card className="border-0 shadow-xl rounded-3xl overflow-hidden bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl 
-                    ring-1 ring-gray-200/50 dark:ring-gray-600/50 min-w-[900px] hover:shadow-2xl transition-all duration-300">
+                    ring-1 ring-gray-200/50 dark:ring-gray-600/50 min-w-[900px] hover:shadow-2xl transition-all duration-200">
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-end justify-between mb-4">
           <div className="space-y-1">
             <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">{term.name}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Program plan this term</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Program plan this term</div>
           </div>
           <Button 
             size="sm" 
             variant="outline"
             className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
-                      text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-md border-0
+                      text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-sm border-0
                       hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
-                      transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                      transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
                       font-medium tracking-wide"
             onClick={() => addRow(yearId, term.id)}
           >
@@ -249,7 +249,7 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
         </div>
 
         {/* Column headers */}
-        <div className="grid grid-cols-[30px_100px_1fr_90px_70px_63px] gap-4 text-sm font-semibold 
+        <div className="grid grid-cols-[30px_100px_1fr_90px_70px_63px] gap-4 text-xs font-semibold 
                         text-gray-600 dark:text-gray-300 pb-3 border-b border-gray-200/60 dark:border-gray-600/40">
           <div></div><div>Code</div><div>Course Name</div><div>Sec.</div><div>Cr.</div><div>GPA</div>
         </div>
@@ -263,11 +263,11 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
 
         {/* Footer totals */}
         <div className="flex items-center justify-end pt-4 border-t border-gray-200/60 dark:border-gray-600/40 mt-4 gap-6">
-          <div className="text-sm">
+          <div className="text-xs">
             <span className="text-gray-500 dark:text-gray-400 mr-2">Total Credits</span>
             <span className="font-semibold text-gray-800 dark:text-gray-100 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">{totalCredits}</span>
           </div>
-          <div className="text-sm">
+          <div className="text-xs">
             <span className="text-gray-500 dark:text-gray-400 mr-2">Term GPA</span>
             <span className="font-semibold text-gray-800 dark:text-gray-100 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">{displayTermGPA.toFixed(2)}</span>
           </div>
@@ -356,20 +356,22 @@ export default function AcademicPlanner() {
     <div className="min-h-screen w-full" style={gradientStyle}>
       <style>{scrollbarStyles}</style>
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
-        {/* Header (title + tabs + year chooser button) */}
+        {/* Header (title + year chooser button) */}
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <CalendarDays className="h-5 w-5" />
-            <h1 className="text-2xl font-bold">Academic Planner</h1>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5" />
+              <h1 className="text-2xl font-bold">Academic Planner</h1>
+            </div>
             <TopTabsInline active="planner" />
           </div>
           <Button 
             variant="outline" 
-            className="rounded-2xl h-11 bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
+            className="rounded-2xl h-11 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                       text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 
-                      hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                      hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                       border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30
-                      transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
+                      transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
             onClick={() => setYearOpen(true)}
           >
             {activeYear?.label || "Choose School Year"} <span className="ml-1 opacity-60">▼</span>
@@ -388,10 +390,10 @@ export default function AcademicPlanner() {
                 <Button
                   key={y.id}
                   variant={y.id === activeYearId ? "default" : "outline"}
-                  className={`w-full justify-start rounded-2xl text-lg py-5 transition-all duration-300 font-medium tracking-wide
+                  className={`w-full justify-start rounded-2xl text-lg py-5 transition-all duration-200 font-medium tracking-wide
                     ${y.id === activeYearId 
-                      ? "bg-gradient-to-r from-cyan-600/90 to-blue-600/90 dark:from-cyan-500/90 dark:to-blue-500/90 text-white shadow-lg ring-2 ring-cyan-200/50 dark:ring-cyan-400/30 backdrop-blur-md hover:from-cyan-700/95 hover:to-blue-700/95 dark:hover:from-cyan-400/95 dark:hover:to-blue-400/95" 
-                      : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30"
+                      ? "bg-gradient-to-r from-cyan-600/90 to-blue-600/90 dark:from-cyan-500/90 dark:to-blue-500/90 text-white shadow-lg ring-2 ring-cyan-200/50 dark:ring-cyan-400/30 backdrop-blur-sm hover:from-cyan-700/95 hover:to-blue-700/95 dark:hover:from-cyan-400/95 dark:hover:to-blue-400/95" 
+                      : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30"
                     }
                     hover:scale-102 active:scale-98 hover:-translate-y-0.5 active:translate-y-0`}
                   onClick={() => {
@@ -407,9 +409,9 @@ export default function AcademicPlanner() {
             <DialogFooter className="mt-3">
               <Button
                 className="bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
-                          text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-md 
+                          text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-sm 
                           hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
-                          transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                          transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
                           rounded-2xl font-medium tracking-wide"
                 onClick={() => {
                   const newLabel = getNextYearLabel();
@@ -466,11 +468,11 @@ export default function AcademicPlanner() {
                 {/* Fixed right rail: "+ Add New Term" */}
                 <div className="ml-4 w-[120px] shrink-0 flex">
                   <button
-                    className="w-full rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
-                              border border-gray-200/60 dark:border-gray-600/40 shadow-md backdrop-blur-md
+                    className="w-full rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                              border border-gray-200/60 dark:border-gray-600/40 shadow-md backdrop-blur-sm
                               hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
                               hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:border-green-200/60 dark:hover:border-green-400/30
-                              transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
+                              transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed
                               disabled:hover:scale-100 disabled:hover:shadow-md"
                     style={{ height: termHeights[y.id] || 560 }}
                     onClick={() => setTermsCount(y.id, (Math.min(4, y.terms.length + 1) as 2 | 3 | 4))}
@@ -492,11 +494,11 @@ export default function AcademicPlanner() {
         {/* Bottom: Add New School Year */}
         <div className="mt-4 pb-8">
           <Button
-            className="w-full h-24 rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-neutral-800/80 dark:to-neutral-900/70 
-                      border border-gray-200/60 dark:border-gray-600/40 shadow-md backdrop-blur-md
+            className="w-full h-24 rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                      border border-gray-200/60 dark:border-gray-600/40 shadow-md backdrop-blur-sm
                       hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
                       hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:border-green-200/60 dark:hover:border-green-400/30
-                      transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-1 active:translate-y-0
+                      transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-1 active:translate-y-0
                       text-gray-600 dark:text-gray-300 font-semibold"
             onClick={() => {
               const newLabel = getNextYearLabel();

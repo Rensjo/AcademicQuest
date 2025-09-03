@@ -134,9 +134,11 @@ export default function Scholarships() {
 				{/* Header */}
 				<div className="flex items-start justify-between gap-4">
 					<div className="flex-1 min-w-0">
-						<div className="flex items-center gap-3 flex-wrap">
-							<CalendarDays className="h-5 w-5" />
-							<h1 className="text-2xl font-bold">Scholarships</h1>
+						<div className="flex flex-col gap-3">
+							<div className="flex items-center gap-3">
+								<CalendarDays className="h-5 w-5" />
+								<h1 className="text-2xl font-bold">Scholarships</h1>
+							</div>
 							<TopTabsInline active="scholarships" />
 						</div>
 					</div>
@@ -170,106 +172,107 @@ export default function Scholarships() {
 								className="rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-500 dark:to-emerald-500 
 										  hover:from-green-700 hover:to-emerald-700 dark:hover:from-green-400 dark:hover:to-emerald-400 
 										  text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium tracking-wide
-										  border-0 backdrop-blur-sm" 
+										  border-0 backdrop-blur-sm hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+										  ring-2 ring-green-200/50 dark:ring-green-400/30 hover:ring-green-300/60 dark:hover:ring-green-300/40" 
 								onClick={addRow}
 							>
 								<Plus className="h-4 w-4 mr-1"/>Add Scholarship
 							</Button>
 						</div>
 						<div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm backdrop-blur-sm">
-							<table className="w-full text-sm">
+							<table className="w-full text-xs">
 								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40 border-b border-black/10 dark:border-white/10">
 									<tr className="text-left">
-										<th className="p-4 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
-										<th className="p-4 w-[170px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
-										<th className="p-4 w-[260px] font-semibold text-gray-700 dark:text-gray-200">Scholarship Name</th>
-										<th className="p-4 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Location</th>
-										<th className="p-4 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Date Due</th>
-										<th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Days Left</th>
-										<th className="p-4 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Date Submitted</th>
-										<th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Resume</th>
-										<th className="p-4 w-[90px] font-semibold text-gray-700 dark:text-gray-200">Essay</th>
-										<th className="p-4 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Other Documents</th>
-										<th className="p-4 w-[160px] font-semibold text-gray-700 dark:text-gray-200">Amount Awarded</th>
+										<th className="px-3 py-2 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
+										<th className="px-3 py-2 w-[170px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
+										<th className="px-3 py-2 w-[320px] font-semibold text-gray-700 dark:text-gray-200">Scholarship Name</th>
+										<th className="px-3 py-2 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Location</th>
+										<th className="px-3 py-2 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Date Due</th>
+										<th className="px-3 py-2 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Days Left</th>
+										<th className="px-3 py-2 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Date Submitted</th>
+										<th className="px-3 py-2 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Resume</th>
+										<th className="px-3 py-2 w-[90px] font-semibold text-gray-700 dark:text-gray-200">Essay</th>
+										<th className="px-3 py-2 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Other Documents</th>
+										<th className="px-3 py-2 w-[160px] font-semibold text-gray-700 dark:text-gray-200">Amount Awarded</th>
 									</tr>
 								</thead>
 								<tbody>
 									{rows.map((r) => (
 										<tr key={r.id} className="border-t border-black/5 dark:border-white/10 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Button
 													variant="ghost"
 													size="icon"
-													className="h-8 w-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-black/10 text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:text-neutral-300 dark:hover:text-red-400 dark:hover:bg-red-950/30"
+													className="h-6 w-6 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-black/10 text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:text-neutral-300 dark:hover:text-red-400 dark:hover:bg-red-950/30"
 													aria-label="Delete row"
 													onClick={() => removeRow(r.id)}
 												>
-													<Trash2 className="h-4 w-4 bg-white/80 dark:bg-neutral-900/60 border-black/10" />
+													<Trash2 className="h-3 w-3" />
 												</Button>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Select value={r.status} onValueChange={(v) => setRow(r.id, { status: v as Status })}>
-													<SelectTrigger className="h-10 text-left rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+													<SelectTrigger className="h-8 text-left rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
 																			  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-																			  transition-all duration-200 backdrop-blur-sm">
+																			  transition-all duration-200 backdrop-blur-sm text-xs">
 														<SelectValue placeholder="Status"/>
 													</SelectTrigger>
-													<SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-600/30 rounded-xl shadow-lg">
+													<SelectContent className="bg-white/95 dark:bg-neutral-800/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-600/30 rounded-xl shadow-lg">
 														{(['Received','Applied','In-Progress','Rejected','Not Started'] as Status[]).map(s => (
 															<SelectItem key={s} value={s}>{s}</SelectItem>
 														))}
 													</SelectContent>
 												</Select>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Input 
-													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+													className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
 															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
 													value={r.name} 
 													onChange={(e) => setRow(r.id, { name: e.target.value })} 
 													placeholder="Scholarship name"
 												/>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Input 
-													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+													className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
 															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
 													value={r.location} 
 													onChange={(e) => setRow(r.id, { location: e.target.value })} 
 													placeholder="Location"
 												/>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Input 
-													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+													className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
 															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
 													type="date" 
 													value={r.dueDate || ''} 
 													onChange={(e) => setRow(r.id, { dueDate: e.target.value })}
 												/>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2 text-center">
 												{(() => {
 													const d = daysLeft(r.dueDate)
-													if (d === undefined) return <span className="text-muted-foreground">—</span>
+													if (d === undefined) return <span className="text-muted-foreground text-xs">—</span>
 													const cls = d < 0 ? 'text-red-500' : d === 0 ? 'text-amber-600' : ''
-													return <span className={cls}>{d}d</span>
+													return <span className={`${cls} text-xs font-medium`}>{d}d</span>
 												})()}
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Input 
-													className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+													className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
 															  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+															  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
 													type="date" 
 													value={r.submittedDate || ''} 
 													onChange={(e) => setRow(r.id, { submittedDate: e.target.value })}
 												/>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Button
 													variant="link"
 													size="sm"
@@ -278,42 +281,42 @@ export default function Scholarships() {
 													aria-label={r.resume ? 'Open resume' : 'Attach resume'}
 													onClick={() => (r.resumePath ? openAttachment(r, 'resume') : attachFile(r.id, 'resume'))}
 												>
-													{r.resume ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+													{r.resume ? <span className="text-xs">Attached</span> : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 												</Button>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Button
 													variant="link"
 													size="sm"
-													className="group h-8 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+													className="group h-6 w-6 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
 													title={r.essayPath ? r.essayPath.split('/').pop() : undefined}
 													aria-label={r.essay ? 'Open essay' : 'Attach essay'}
 													onClick={() => (r.essayPath ? openAttachment(r, 'essay') : attachFile(r.id, 'essay'))}
 												>
-													{r.essay ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+													{r.essay ? <span className="text-xs">Attached</span> : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 												</Button>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<Button
 													variant="link"
 													size="sm"
-													className="group h-8 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+													className="group h-6 w-6 px-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent active:bg-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
 													title={r.otherDocsPaths && r.otherDocsPaths.length ? `${r.otherDocsPaths.length} file(s)` : undefined}
 													aria-label={r.otherDocs ? 'Open other documents' : 'Attach other documents'}
 													onClick={() => ((r.otherDocsPaths && r.otherDocsPaths.length) ? openAttachment(r, 'otherDocs') : attachFile(r.id, 'otherDocs'))}
 												>
-													{r.otherDocs ? `${r.otherDocsPaths?.length ?? 0} file(s)` : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+													{r.otherDocs ? <span className="text-xs">{`${r.otherDocsPaths?.length ?? 0} file(s)`}</span> : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 												</Button>
 											</td>
-											<td className="p-3">
+											<td className="px-2 py-2">
 												<div className="flex items-center gap-2">
-													<span className="text-muted-foreground w-10 text-right">
+													<span className="text-muted-foreground w-8 text-right text-xs">
 														{new Intl.NumberFormat(undefined, { style: 'currency', currency: settings.preferredCurrency }).formatToParts(0).find(p => p.type === 'currency')?.value}
 													</span>
 													<Input 
-														className="h-10 rounded-xl bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-600/40 
+														className="h-8 rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
 																  focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-																  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200" 
+																  transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
 														type="number" 
 														step="0.01" 
 														value={r.amountAwarded ?? ''} 

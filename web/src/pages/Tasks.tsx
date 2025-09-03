@@ -152,7 +152,7 @@ export default function Tasks() {
               <CalendarDays className="h-5 w-5" />
               <h1 className="text-2xl font-bold">Task Tracker</h1>
             </div>
-            <div className="mt-2 min-w-0 overflow-x-hidden">
+            <div className="mt-2 min-w-0">
               <TopTabsInline active="tasks" />
             </div>
           </div>
@@ -200,11 +200,11 @@ export default function Tasks() {
               <Dialog open={termDialogOpen} onOpenChange={setTermDialogOpen}>
                 <Button
                   variant="outline"
-                  className="rounded-2xl bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-gray-800/80 dark:to-gray-900/70 
+                  className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-gray-800/80 dark:to-gray-900/70 
                             text-gray-700 dark:text-gray-200 hover:from-cyan-50/90 hover:to-blue-50/80 dark:hover:from-cyan-950/40 dark:hover:to-blue-950/30 
-                            hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-md 
+                            hover:text-cyan-700 dark:hover:text-cyan-300 shadow-md hover:shadow-lg backdrop-blur-sm 
                             border border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-cyan-400/30
-                            transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
+                            transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
                   onClick={() => setTermDialogOpen(true)}
                 >
                   {activeYear && activeTerm ? `${activeYear.label} • ${activeTerm.name}` : "Select Term"}
@@ -244,9 +244,9 @@ export default function Tasks() {
               <Button 
                 size="sm" 
                 className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
-                          text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-md border-0
+                          text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-sm border-0
                           hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
-                          transition-all duration-300 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                          transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
                           font-medium tracking-wide" 
                 onClick={addRow}
               >
@@ -257,24 +257,24 @@ export default function Tasks() {
           <CardContent className="p-6">
             <div className="w-full overflow-x-auto rounded-2xl bg-gradient-to-r from-white/60 to-gray-50/40 dark:from-neutral-800/60 dark:to-neutral-900/40 
                           backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 shadow-lg">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-gradient-to-r from-white/80 to-gray-50/60 dark:from-neutral-800/80 dark:to-neutral-900/60 
                                 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-600/40">
                   <tr className="text-left">
-                    <th className="p-4 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Course</th>
-                    <th className="p-4 w-[420px] font-semibold text-gray-700 dark:text-gray-200">Assignment / To‑do</th>
-                    <th className="p-4 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
-                    <th className="p-4 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Due Date</th>
-                    <th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Due Time</th>
-                    <th className="p-4 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Days Left</th>
-                    <th className="p-4 w-[90px] font-semibold text-gray-700 dark:text-gray-200">Grade</th>
-                    <th className="p-4 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
+                    <th className="px-3 py-2 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Course</th>
+                    <th className="px-3 py-2 w-[420px] font-semibold text-gray-700 dark:text-gray-200">Assignment / To‑do</th>
+                    <th className="px-3 py-2 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
+                    <th className="px-3 py-2 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Due Date</th>
+                    <th className="px-3 py-2 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Due Time</th>
+                    <th className="px-3 py-2 w-[110px] font-semibold text-gray-700 dark:text-gray-200">Days Left</th>
+                    <th className="px-3 py-2 w-[90px] font-semibold text-gray-700 dark:text-gray-200">Grade</th>
+                    <th className="px-3 py-2 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayRows.map((r) => (
                     <tr key={r.id} className="border-t border-gray-200/40 dark:border-gray-600/30 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         <Select value={r.courseId ?? ""} onValueChange={(v) => {
                           if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
                             spawnFromPlaceholder(r.id, { courseId: v });
@@ -282,9 +282,9 @@ export default function Tasks() {
                             updateTask(r.id as string, { courseId: v });
                           }
                         }}>
-                          <SelectTrigger className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                                   focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                                                   transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200">
+                          <SelectTrigger className="h-8 rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                                                   transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs">
                             <SelectValue placeholder="Select course"/>
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
@@ -306,11 +306,11 @@ export default function Tasks() {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         <Input 
-                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
                           value={r.title} 
                           onChange={(e) => {
                             const val = e.target.value;
@@ -323,7 +323,7 @@ export default function Tasks() {
                           placeholder="Assignment title" 
                         />
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         <Select value={r.status} onValueChange={(v) => {
                           const st = v as TaskStatus;
                           if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
@@ -332,9 +332,9 @@ export default function Tasks() {
                             updateTask(r.id as string, { status: st });
                           }
                         }}>
-                          <SelectTrigger className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                                   focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                                                   transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200">
+                          <SelectTrigger className="h-8 rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                                                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                                                   transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs">
                             <SelectValue placeholder="Status"/>
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
@@ -351,11 +351,11 @@ export default function Tasks() {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         <Input 
-                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
                           type="date" 
                           value={r.dueDate || ""} 
                           onChange={(e) => {
@@ -368,11 +368,11 @@ export default function Tasks() {
                           }} 
                         />
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         <Input 
-                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
                           type="time" 
                           value={r.dueTime || ""} 
                           onChange={(e) => {
@@ -385,19 +385,19 @@ export default function Tasks() {
                           }} 
                         />
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         {(() => {
                           const d = getDaysLeft(r.dueDate);
-                          if (d === undefined) return <span className="text-gray-400 dark:text-gray-500">—</span>;
+                          if (d === undefined) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
                           const cls = d < 0 ? "text-red-500 font-semibold" : d === 0 ? "text-amber-600 font-semibold" : "text-gray-600 dark:text-gray-300";
-                          return <span className={cls}>{d}d</span>;
+                          return <span className={`${cls} text-xs`}>{d}d</span>;
                         })()}
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         <Input 
-                          className="h-9 rounded-2xl bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-cyan-400/60 dark:focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-200/50 dark:focus:ring-cyan-400/20
-                                    transition-all duration-300 backdrop-blur-md text-gray-700 dark:text-gray-200" 
+                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
+                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
+                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
                           value={r.grade || ""} 
                           onChange={(e) => {
                             const val = e.target.value;
@@ -409,20 +409,20 @@ export default function Tasks() {
                           }} 
                         />
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-2">
                         {/* Only show delete button for actual tasks, not placeholders, and only if task has content */}
                         {typeof r.id === 'string' && !r.id.startsWith('ph:') && (r.title?.trim() || r.courseId) ? (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0 rounded-lg 
+                            className="h-6 w-6 p-0 rounded-lg 
                                       text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400
                                       hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-200
                                       focus:text-red-500 dark:focus:text-red-400"
                             onClick={() => removeTask(r.id as string)}
                             title="Delete task"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         ) : null}
                       </td>

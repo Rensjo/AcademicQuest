@@ -712,11 +712,11 @@ export default function AcademicQuestDashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                    className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                              backdrop-blur-md hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
-                             border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
-                             shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                             text-gray-700 dark:text-gray-200 hover:text-green-700 dark:hover:text-emerald-300
+                             border-neutral-200/60 dark:border-neutral-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
+                             shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                             text-neutral-700 dark:text-neutral-200 hover:text-green-700 dark:hover:text-emerald-300
                              font-medium tracking-wide"
                     onClick={() => setQuickOpen(true)}
                   >
@@ -724,11 +724,11 @@ export default function AcademicQuestDashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                    className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                              backdrop-blur-md hover:from-orange-50/90 hover:to-amber-50/80 dark:hover:from-orange-950/40 dark:hover:to-amber-950/30 
-                             border-gray-200/60 dark:border-gray-600/40 hover:border-orange-200/60 dark:hover:border-amber-400/30
-                             shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                             text-gray-700 dark:text-gray-200 hover:text-orange-700 dark:hover:text-amber-300
+                             border-neutral-200/60 dark:border-neutral-600/40 hover:border-orange-200/60 dark:hover:border-amber-400/30
+                             shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                             text-neutral-700 dark:text-neutral-200 hover:text-orange-700 dark:hover:text-amber-300
                              font-medium tracking-wide" 
                     onClick={() => {
                       // Force show Pomodoro at bottom-right corner
@@ -802,11 +802,11 @@ export default function AcademicQuestDashboard() {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                        className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                                  backdrop-blur-md hover:from-purple-50/90 hover:to-violet-50/80 dark:hover:from-purple-950/40 dark:hover:to-violet-950/30 
-                                 border-gray-200/60 dark:border-gray-600/40 hover:border-purple-200/60 dark:hover:border-violet-400/30
-                                 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                                 text-gray-700 dark:text-gray-200 hover:text-purple-700 dark:hover:text-violet-300
+                                 border-neutral-200/60 dark:border-neutral-600/40 hover:border-purple-200/60 dark:hover:border-violet-400/30
+                                 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                                 text-neutral-700 dark:text-neutral-200 hover:text-purple-700 dark:hover:text-violet-300
                                  font-medium tracking-wide"
                         onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}
                       >
@@ -877,11 +877,11 @@ export default function AcademicQuestDashboard() {
                                     type="button"
                                     variant="ghost"
                                     onClick={() => theme.setMode(key as "light" | "dark" | "system")}
-                                    className={`h-9 px-3 gap-2 rounded-2xl transition-all duration-300 
+                                    className={`h-9 px-3 gap-2 rounded-2xl transition-all duration-200 
                                       hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
                                       ${active 
                                         ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-md" 
-                                        : "bg-gradient-to-r from-white/80 to-gray-50/70 dark:from-gray-800/80 dark:to-gray-900/70 text-muted-foreground hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"}
+                                        : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 text-neutral-700 dark:text-neutral-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-md border border-neutral-200/60 dark:border-neutral-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"}
                                       font-medium tracking-wide focus-visible:outline-none focus-visible:ring-0`}
                                     aria-pressed={active}
                                   >
@@ -1003,11 +1003,11 @@ export default function AcademicQuestDashboard() {
                       {navigate ? (
                         <Button 
                           variant="outline" 
-                          className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                          className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                                    backdrop-blur-md hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
-                                   border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
-                                   shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                                   text-gray-700 dark:text-gray-200 hover:text-blue-700 dark:hover:text-indigo-300
+                                   border-neutral-200/60 dark:border-neutral-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
+                                   shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                                   text-neutral-700 dark:text-neutral-200 hover:text-blue-700 dark:hover:text-indigo-300
                                    font-medium tracking-wide"
                           onClick={() => navigate!("/schedule")}
                         >
@@ -1018,11 +1018,11 @@ export default function AcademicQuestDashboard() {
                         <a href="/schedule">
                           <Button 
                             variant="outline" 
-                            className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                            className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                                      backdrop-blur-md hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
-                                     border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
-                                     shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                                     text-gray-700 dark:text-gray-200 hover:text-blue-700 dark:hover:text-indigo-300
+                                     border-neutral-200/60 dark:border-neutral-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
+                                     shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                                     text-neutral-700 dark:text-neutral-200 hover:text-blue-700 dark:hover:text-indigo-300
                                      font-medium tracking-wide"
                           >
                             <CalendarDays className="h-4 w-4 mr-2" />
@@ -1166,12 +1166,11 @@ export default function AcademicQuestDashboard() {
                     <h3 className="text-lg font-semibold">Study Hours (7‑day)</h3>
                     <Button 
                       variant="ghost" 
-                      className="rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
-                                hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
-                                text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
-                                hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
-                                font-medium tracking-wide backdrop-blur-md
-                                ring-2 ring-blue-200/50 dark:ring-blue-400/30 hover:ring-blue-300/60 dark:hover:ring-blue-300/40"
+                      className="rounded-2xl bg-transparent text-foreground hover:bg-gradient-to-r hover:from-neutral-100/80 hover:to-neutral-200/60 
+                               dark:hover:from-neutral-700/60 dark:hover:to-neutral-800/80 dark:bg-neutral-900/60 border-0 shadow-none 
+                               focus-visible:outline-none focus-visible:ring-0 transition-all duration-200 hover:scale-105 active:scale-95
+                               hover:shadow-lg dark:hover:shadow-neutral-900/50 transform hover:-translate-y-0.5 active:translate-y-0
+                               font-medium tracking-wide"
                       onClick={() => setStudyHoursOpen(true)}
                     >
                       Details
@@ -1204,11 +1203,11 @@ export default function AcademicQuestDashboard() {
                     <div className="flex gap-2">
                       <Button 
                         variant="outline" 
-                        className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                        className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                                  backdrop-blur-md hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
-                                 border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
-                                 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                                 text-gray-700 dark:text-gray-200 hover:text-green-700 dark:hover:text-emerald-300
+                                 border-neutral-200/60 dark:border-neutral-600/40 hover:border-green-200/60 dark:hover:border-emerald-400/30
+                                 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                                 text-neutral-700 dark:text-neutral-200 hover:text-green-700 dark:hover:text-emerald-300
                                  font-medium tracking-wide"
                         onClick={() => setQuickOpen(true)}
                       >
@@ -1261,13 +1260,12 @@ export default function AcademicQuestDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">Grade Distribution</h3>
                     <Button
-                      variant="outline"
-                      className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-white/70 dark:from-neutral-800/90 dark:to-neutral-900/70 
-                                backdrop-blur-md hover:from-blue-50/90 hover:to-purple-50/90 dark:hover:from-blue-950/50 dark:hover:to-purple-950/50 
-                                border-white/40 dark:border-white/10 hover:border-blue-200/60 dark:hover:border-purple-400/30
-                                shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                                text-gray-700 dark:text-gray-200 hover:text-blue-700 dark:hover:text-purple-200
-                                font-medium tracking-wide"
+                      variant="ghost"
+                      className="rounded-2xl bg-transparent text-foreground hover:bg-gradient-to-r hover:from-neutral-100/80 hover:to-neutral-200/60 
+                               dark:hover:from-neutral-700/60 dark:hover:to-neutral-800/80 dark:bg-neutral-900/60 border-0 shadow-none 
+                               focus-visible:outline-none focus-visible:ring-0 transition-all duration-200 hover:scale-105 active:scale-95
+                               hover:shadow-lg dark:hover:shadow-neutral-900/50 transform hover:-translate-y-0.5 active:translate-y-0
+                               font-medium tracking-wide"
                       onClick={() => setGradesOpen(true)}
                     >
                       <span className="relative z-10">More Details</span>
@@ -1515,11 +1513,11 @@ export default function AcademicQuestDashboard() {
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                      className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                                backdrop-blur-md hover:from-purple-50/90 hover:to-violet-50/80 dark:hover:from-purple-950/40 dark:hover:to-violet-950/30 
-                               border-gray-200/60 dark:border-gray-600/40 hover:border-purple-200/60 dark:hover:border-violet-400/30
-                               shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                               text-gray-700 dark:text-gray-200 hover:text-purple-700 dark:hover:text-violet-300
+                               border-neutral-200/60 dark:border-neutral-600/40 hover:border-purple-200/60 dark:hover:border-violet-400/30
+                               shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                               text-neutral-700 dark:text-neutral-200 hover:text-purple-700 dark:hover:text-violet-300
                                font-medium tracking-wide"
                       onClick={() => { setGamificationTab('badges'); setGamificationOpen(true); }}
                     >
@@ -1537,11 +1535,11 @@ export default function AcademicQuestDashboard() {
             <div className="flex gap-3">
               <Button 
                 variant="outline" 
-                className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
                          backdrop-blur-md hover:from-cyan-50/90 hover:to-sky-50/80 dark:hover:from-cyan-950/40 dark:hover:to-sky-950/30 
-                         border-gray-200/60 dark:border-gray-600/40 hover:border-cyan-200/60 dark:hover:border-sky-400/30
-                         shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
-                         text-gray-700 dark:text-gray-200 hover:text-cyan-700 dark:hover:text-sky-300
+                         border-neutral-200/60 dark:border-neutral-600/40 hover:border-cyan-200/60 dark:hover:border-sky-400/30
+                         shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
+                         text-neutral-700 dark:text-neutral-200 hover:text-cyan-700 dark:hover:text-sky-300
                          font-medium tracking-wide"
               >
                 <span>Import Syllabus</span>

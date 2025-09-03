@@ -9,7 +9,7 @@ import { useCoursePlanner } from "@/store/coursePlannerStore";
 import { useSchedule } from "@/store/scheduleStore";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/RichTextEditor";
 import { saveToOPFS, getOPFSFileURL } from "@/lib/opfs";
-import { Plus, CalendarDays, Save as SaveIcon } from "lucide-react";
+import { Plus, CalendarDays, Save as SaveIcon, BookOpen, User } from "lucide-react";
 // themed gradient like other pages
 import { useTheme, PALETTES } from "@/store/theme";
 import { useToast } from "@/hooks/use-toast";
@@ -277,8 +277,8 @@ export default function CoursePlanner() {
   if (!hydrated) {
     return (
       <div className="min-h-screen w-full" style={gradientStyle}>
-  <style>{scrollbarStyles}</style>
-        <div className="max-w-[1400px] mx-auto px-3.5 py-7">
+        <style>{scrollbarStyles}</style>
+        <div className="max-w-[1400px] mx-auto px-3 py-6">
           <div className="flex items-center gap-3 mb-4">
             <CalendarDays className="h-5 w-5" />
             <h1 className="text-2xl font-bold">Course Planner</h1>
@@ -294,49 +294,61 @@ export default function CoursePlanner() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden" style={gradientStyle}>
   <style>{scrollbarStyles}</style>
-      <div className="max-w-[1400px] mx-auto px-3 py-7 space-y-7">
+      <div className="max-w-[1400px] mx-auto px-3 py-6 space-y-6">
         {/* Top header: title on first row, tabs on second row; course controls stay at top-right */}
         <div className="relative">
-          <div className="flex items-center gap-3 flex-wrap py-0">
-            <CalendarDays className="h-5 w-5" />
-            <h1 className="text-2xl font-bold">Course Planner</h1>
-          </div>
-          <div className="mt-2 pr-56">
-            <TopTabsInline active="courses" />
-          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <CalendarDays className="h-5 w-5" />
+                <h1 className="text-2xl font-bold">Course Planner</h1>
+              </div>
+              <TopTabsInline active="courses" />
+            </div>
 
-          {/* Course switcher controls positioned above at top-right */}
-          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
-            <Select
-              value={course?.id ?? ""}
-              onValueChange={(v) => {
-                if (v === "__add_new__") {
-                  const id = addCourse(key, { title: "New Course", code: "" });
-                  setSelectedCourse(id);
-                } else {
-                  setSelectedCourse(v);
-                }
-              }}
-            >
-              <SelectTrigger className="h-9 rounded-xl border border-black/10 bg-white/80 dark:bg-neutral-900/60 backdrop-blur min-w-[240px]">
-                <SelectValue placeholder="Select course" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
-                {courses.map((c) => (
-                  <SelectItem key={c.id} value={c.id} className="cursor-pointer">
-                    <span className="font-medium">{c.code || ""}</span>
-                    {c.title ? <span className="opacity-70">{c.code ? " \u2014 " : ""}{c.title}</span> : null}
+            {/* Course switcher controls positioned at top-right */}
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <Select
+                value={course?.id ?? ""}
+                onValueChange={(v) => {
+                  if (v === "__add_new__") {
+                    const id = addCourse(key, { title: "New Course", code: "" });
+                    setSelectedCourse(id);
+                  } else {
+                    setSelectedCourse(v);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 rounded-xl border border-black/10 bg-white/80 dark:bg-neutral-900/60 backdrop-blur min-w-[240px] 
+                                       hover:bg-white/90 dark:hover:bg-neutral-900/70 transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
+                  <SelectValue placeholder="Select course" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="cursor-pointer hover:bg-white/60 dark:hover:bg-neutral-800/60 transition-colors duration-200">
+                      <span className="font-medium">{c.code || ""}</span>
+                      {c.title ? <span className="opacity-70">{c.code ? " \u2014 " : ""}{c.title}</span> : null}
+                    </SelectItem>
+                  ))}
+                  <div className="my-1 border-t border-black/10 dark:border-white/10" />
+                  <SelectItem value="__add_new__" className="cursor-pointer hover:bg-white/60 dark:hover:bg-neutral-800/60 transition-colors duration-200">
+                    <span className="inline-flex items-center"><Plus className="h-4 w-4 mr-2" /> Add New Course</span>
                   </SelectItem>
-                ))}
-                <div className="my-1 border-t border-black/10 dark:border-white/10" />
-                <SelectItem value="__add_new__" className="cursor-pointer">
-                  <span className="inline-flex items-center"><Plus className="h-4 w-4 mr-2" /> Add New Course</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" className="h-8 rounded-full px-3" onClick={() => setSelectedCourse(addCourse(key, { title: "New Course" }))}>
-              <Plus className="h-4 w-4 mr-1" /> Add Course
-            </Button>
+                </SelectContent>
+              </Select>
+              <Button 
+                size="sm" 
+                className="h-8 rounded-2xl px-3 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                          text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                          hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                          border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
+                          transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                          font-medium tracking-wide" 
+                onClick={() => setSelectedCourse(addCourse(key, { title: "New Course" }))}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Course
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -345,25 +357,37 @@ export default function CoursePlanner() {
           {/* LEFT COLUMN (30%) — schedule → tasks → files */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
             {/* Weekly checkbox schedule */}
-            <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
-              <CardContent className="p-4">
-                <div className="text-sm font-semibold mb-2">This Week</div>
-                <div className="grid grid-cols-7 gap-2">
+            <Card className="border-0 shadow-xl rounded-3xl bg-gradient-to-br from-white/95 to-white/85 dark:from-neutral-900/80 dark:to-neutral-800/70 backdrop-blur-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 dark:from-blue-400/20 dark:to-indigo-400/20">
+                    <CalendarDays className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">This Week</div>
+                </div>
+                <div className="grid grid-cols-7 gap-3">
                   {DAYS.map((d, idx) => (
                     <label
                       key={idx}
-                      className="inline-flex flex-col items-center text-xs rounded-lg p-1 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      className="inline-flex flex-col items-center text-xs rounded-2xl p-3 cursor-pointer 
+                                bg-gradient-to-br from-white/70 to-white/50 dark:from-neutral-800/50 dark:to-neutral-900/40
+                                hover:from-blue-50/80 hover:to-indigo-50/60 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30
+                                border border-gray-200/40 dark:border-gray-600/30 hover:border-blue-200/60 dark:hover:border-blue-400/40
+                                transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-1 
+                                shadow-sm hover:shadow-md backdrop-blur-sm group"
                     >
                       <input
                         type="checkbox"
-                        className="h-5 w-5 accent-neutral-600 dark:accent-neutral-200"
+                        className="h-4 w-4 accent-blue-600 dark:accent-blue-400 rounded transition-all duration-200 group-hover:scale-110"
                       />
-                      <span className="mt-1 text-muted-foreground">{d}</span>
+                      <span className="mt-2 text-gray-600 dark:text-gray-300 font-medium group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors duration-200">{d}</span>
                     </label>
                   ))}
                 </div>
-                <div className="text-xs text-muted-foreground mt-3">
-                  Use these to mark attendance/completion for this week.
+                <div className="mt-4 p-3 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/40 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200/30 dark:border-blue-700/30">
+                  <div className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                    ✓ Track your weekly attendance and completion progress
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -376,6 +400,12 @@ export default function CoursePlanner() {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                              text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                              hover:text-green-700 dark:hover:text-green-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                              border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-green-400/30
+                              transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                              font-medium tracking-wide"
                     onClick={() =>
                       addTask(key, course!.id, {
                         id: Math.random().toString(36).slice(2, 8),
@@ -431,7 +461,17 @@ export default function CoursePlanner() {
                           }
                           placeholder="%"
                         />
-                        <Button size="sm" variant="outline" onClick={() => removeTask(key, course!.id, t.id)}>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                                    text-gray-700 dark:text-gray-200 hover:from-red-50/90 hover:to-red-100/80 dark:hover:from-red-950/40 dark:hover:to-red-900/30 
+                                    hover:text-red-700 dark:hover:text-red-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                                    border border-gray-200/60 dark:border-gray-600/40 hover:border-red-200/60 dark:hover:border-red-400/30
+                                    transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                    font-medium tracking-wide" 
+                          onClick={() => removeTask(key, course!.id, t.id)}
+                        >
                           Remove
                         </Button>
                       </div>
@@ -468,7 +508,17 @@ export default function CoursePlanner() {
                     value={newFolder}
                     onChange={(e) => setNewFolder(e.target.value)}
                   />
-                  <Button onClick={handleAddFolder}>Add Folder</Button>
+                  <Button 
+                    className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                              text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                              hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                              border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
+                              transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                              font-medium tracking-wide" 
+                    onClick={handleAddFolder}
+                  >
+                    Add Folder
+                  </Button>
                 </div>
 
                 {/* Folders and files list */}
@@ -485,6 +535,12 @@ export default function CoursePlanner() {
                             />
                             <Button
                               size="sm"
+                              className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90
+                                        hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                                        text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                        hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                        font-medium tracking-wide backdrop-blur-md
+                                        ring-2 ring-green-200/50 dark:ring-green-400/30 hover:ring-green-300/60 dark:hover:ring-green-300/40"
                               onClick={() => {
                                 if (!course) return;
                                 const val = renameText.trim();
@@ -494,13 +550,36 @@ export default function CoursePlanner() {
                                 setRenameText("");
                               }}
                             >Save</Button>
-                            <Button size="sm" variant="outline" onClick={() => { setRenamingId(null); setRenameText(""); }}>Cancel</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                                        text-gray-700 dark:text-gray-200 hover:from-gray-50/90 hover:to-gray-100/80 dark:hover:from-gray-750/40 dark:hover:to-gray-850/30 
+                                        shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40
+                                        transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                                        font-medium tracking-wide" 
+                              onClick={() => { setRenamingId(null); setRenameText(""); }}
+                            >
+                              Cancel
+                            </Button>
                           </div>
                         ) : (
                           <div className="text-xs font-semibold">{fold.path}</div>
                         )}
                         {renamingId !== fold.id && (
-                          <Button size="sm" variant="outline" onClick={() => { setRenamingId(fold.id); setRenameText(fold.path); }}>Rename</Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                                      text-gray-700 dark:text-gray-200 hover:from-amber-50/90 hover:to-yellow-50/80 dark:hover:from-amber-950/40 dark:hover:to-yellow-950/30 
+                                      hover:text-amber-700 dark:hover:text-amber-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                                      border border-gray-200/60 dark:border-gray-600/40 hover:border-amber-200/60 dark:hover:border-amber-400/30
+                                      transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                      font-medium tracking-wide" 
+                            onClick={() => { setRenamingId(fold.id); setRenameText(fold.path); }}
+                          >
+                            Rename
+                          </Button>
                         )}
                       </div>
 
@@ -520,7 +599,19 @@ export default function CoursePlanner() {
                                 <div className="truncate" title={f.name}>{f.name}</div>
                                 <div className="text-right">{(f.size / 1024).toFixed(1)} KB</div>
                                 <div className="flex items-center justify-end gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => openFile(f)}>Open</Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                                              text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                                              hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                                              border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
+                                              transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                                              font-medium tracking-wide" 
+                                    onClick={() => openFile(f)}
+                                  >
+                                    Open
+                                  </Button>
                                   <Select
                                     value={fold.path}
                                     onValueChange={(to) => {
@@ -554,51 +645,124 @@ export default function CoursePlanner() {
           {/* RIGHT COLUMN (70%) — title → meta → notes */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
             {/* Course title (single control at the top) */}
-            <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={course?.title || ""}
-                    onChange={(e) => updateCourse(key, { ...course!, title: e.target.value })}
-                    placeholder="Course Title"
-                  />
-                  <Input
-                    className="w-[160px]"
-                    value={course?.code || ""}
-                    onChange={(e) => updateCourse(key, { ...course!, code: e.target.value })}
-                    placeholder="Code"
-                  />
+            <Card className="border-0 shadow-xl rounded-3xl bg-gradient-to-br from-white/95 to-white/85 dark:from-neutral-900/80 dark:to-neutral-800/70 backdrop-blur-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 dark:from-emerald-400/20 dark:to-teal-400/20">
+                    <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">Course Information</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="courseTitle" className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2 block">
+                      Course Title
+                    </Label>
+                    <Input
+                      id="courseTitle"
+                      value={course?.title || ""}
+                      onChange={(e) => updateCourse(key, { ...course!, title: e.target.value })}
+                      placeholder="e.g., Introduction to Computer Science"
+                      className="border-0 shadow-lg rounded-2xl bg-gradient-to-br from-white/90 to-white/70 dark:from-neutral-800/60 dark:to-neutral-900/50 
+                                backdrop-blur-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 
+                                focus:shadow-xl focus:scale-[1.02] transition-all duration-200
+                                hover:shadow-md hover:bg-gradient-to-br hover:from-white hover:to-white/90 
+                                dark:hover:from-neutral-800/80 dark:hover:to-neutral-900/70"
+                    />
+                  </div>
+                  <div className="w-40">
+                    <Label htmlFor="courseCode" className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2 block">
+                      Course Code
+                    </Label>
+                    <Input
+                      id="courseCode"
+                      value={course?.code || ""}
+                      onChange={(e) => updateCourse(key, { ...course!, code: e.target.value })}
+                      placeholder="CS101"
+                      className="border-0 shadow-lg rounded-2xl bg-gradient-to-br from-white/90 to-white/70 dark:from-neutral-800/60 dark:to-neutral-900/50 
+                                backdrop-blur-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 
+                                focus:shadow-xl focus:scale-[1.02] transition-all duration-200
+                                hover:shadow-md hover:bg-gradient-to-br hover:from-white hover:to-white/90 
+                                dark:hover:from-neutral-800/80 dark:hover:to-neutral-900/70"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 p-3 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-teal-50/40 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-200/30 dark:border-emerald-700/30">
+                  <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                    📚 Enter your course details to begin organizing modules and assignments
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Instructor + Class Time/Room (auto) + Syllabus */}
-            <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <div>
-                    <Label className="text-xs">Instructor</Label>
+            <Card className="border-0 shadow-xl rounded-3xl bg-gradient-to-br from-white/95 to-white/85 dark:from-neutral-900/80 dark:to-neutral-800/70 backdrop-blur-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 rounded-2xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 dark:from-purple-400/20 dark:to-violet-400/20">
+                    <User className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">Course Details</div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="instructor" className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      👨‍🏫 Instructor
+                    </Label>
                     <Input
+                      id="instructor"
                       value={course?.instructor || ""}
                       onChange={(e) => updateCourse(key, { ...course!, instructor: e.target.value })}
-                      placeholder="Type name"
+                      placeholder="Professor Name"
+                      className="border-0 shadow-lg rounded-2xl bg-gradient-to-br from-white/90 to-white/70 dark:from-neutral-800/60 dark:to-neutral-900/50 
+                                backdrop-blur-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 
+                                focus:shadow-xl focus:scale-[1.02] transition-all duration-200
+                                hover:shadow-md hover:bg-gradient-to-br hover:from-white hover:to-white/90 
+                                dark:hover:from-neutral-800/80 dark:hover:to-neutral-900/70"
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs">Class Time</Label>
-                    <Input disabled value={classMeta.time} />
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      🕐 Class Time
+                    </Label>
+                    <Input 
+                      disabled 
+                      value={classMeta.time} 
+                      className="border-0 shadow-lg rounded-2xl bg-gradient-to-br from-gray-100/90 to-gray-100/70 dark:from-neutral-700/60 dark:to-neutral-800/50 
+                                backdrop-blur-sm text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    />
                   </div>
-                  <div>
-                    <Label className="text-xs">Room No.</Label>
-                    <Input disabled value={classMeta.room} />
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      🏢 Room No.
+                    </Label>
+                    <Input 
+                      disabled 
+                      value={classMeta.room} 
+                      className="border-0 shadow-lg rounded-2xl bg-gradient-to-br from-gray-100/90 to-gray-100/70 dark:from-neutral-700/60 dark:to-neutral-800/50 
+                                backdrop-blur-sm text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    />
                   </div>
-                  <div>
-                    <Label className="text-xs">Syllabus (URL)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="syllabus" className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      📄 Syllabus URL
+                    </Label>
                     <Input
+                      id="syllabus"
                       value={course?.syllabusUrl || ""}
                       onChange={(e) => updateCourse(key, { ...course!, syllabusUrl: e.target.value })}
-                      placeholder="https://..."
+                      placeholder="https://example.com/syllabus"
+                      className="border-0 shadow-lg rounded-2xl bg-gradient-to-br from-white/90 to-white/70 dark:from-neutral-800/60 dark:to-neutral-900/50 
+                                backdrop-blur-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 
+                                focus:shadow-xl focus:scale-[1.02] transition-all duration-200
+                                hover:shadow-md hover:bg-gradient-to-br hover:from-white hover:to-white/90 
+                                dark:hover:from-neutral-800/80 dark:hover:to-neutral-900/70"
                     />
+                  </div>
+                </div>
+                <div className="mt-4 p-3 rounded-2xl bg-gradient-to-r from-purple-50/60 to-violet-50/40 dark:from-purple-950/30 dark:to-violet-950/20 border border-purple-200/30 dark:border-purple-700/30">
+                  <div className="text-xs text-purple-700 dark:text-purple-300 font-medium">
+                    ⚡ Class schedule auto-updates based on your selections above
                   </div>
                 </div>
               </CardContent>
@@ -609,7 +773,17 @@ export default function CoursePlanner() {
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-semibold">Notes</div>
-                  <Button size="sm" className="h-8 rounded-full px-3" onClick={onSaveModuleNotes} disabled={!course || !activeModuleId}>
+                  <Button 
+                    size="sm" 
+                    className="h-8 rounded-2xl px-3 bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90
+                              hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+                              text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                              hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
+                              font-medium tracking-wide backdrop-blur-md
+                              ring-2 ring-green-200/50 dark:ring-green-400/30 hover:ring-green-300/60 dark:hover:ring-green-300/40" 
+                    onClick={onSaveModuleNotes} 
+                    disabled={!course || !activeModuleId}
+                  >
                     <SaveIcon className="h-4 w-4 mr-1" /> Save
                   </Button>
                 </div>
@@ -624,7 +798,11 @@ export default function CoursePlanner() {
                             type="button"
                             variant={m.id === activeModuleId ? "default" : "outline"}
                             size="icon"
-                            className={`h-8 w-8 rounded-md ${m.id === activeModuleId ? '' : 'bg-white/70 dark:bg-neutral-900/60'}`}
+                            className={`h-8 w-8 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg
+                              ${m.id === activeModuleId 
+                                ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-sm hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95' 
+                                : 'bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30'
+                              }`}
                             onClick={() => setActiveModuleId(m.id)}
                             title={m.title}
                           >
@@ -633,7 +811,7 @@ export default function CoursePlanner() {
                           {/* Hover delete X */}
                           <button
                             aria-label="Remove module"
-                            className="hidden group-hover:flex absolute -top-1 -right-1 h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] shadow"
+                            className="hidden group-hover:flex absolute -top-1 -right-1 h-5 w-5 items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white text-[10px] shadow-lg transition-all duration-200 hover:scale-110"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -650,7 +828,11 @@ export default function CoursePlanner() {
                         type="button"
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 rounded-md"
+                        className="h-8 w-8 rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                                  text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30 
+                                  hover:text-green-700 dark:hover:text-green-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                                  border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-green-400/30
+                                  transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
                         onClick={() => {
                           const nextTitle = `M${(course?.modules.length || 0) + 1}`;
                           const id = addModule(key, course!.id, nextTitle);

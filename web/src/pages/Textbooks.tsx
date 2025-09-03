@@ -112,9 +112,11 @@ export default function Textbooks() {
 				{/* Header + chart */}
 				<div className="flex items-start justify-between gap-4">
 					<div className="flex-1 min-w-0">
-						<div className="flex items-center gap-3 flex-wrap">
-							<CalendarDays className="h-5 w-5" />
-							<h1 className="text-2xl font-bold">Textbooks</h1>
+						<div className="flex flex-col gap-3">
+							<div className="flex items-center gap-3">
+								<CalendarDays className="h-5 w-5" />
+								<h1 className="text-2xl font-bold">Textbooks</h1>
+							</div>
 							<TopTabsInline active="textbooks" />
 						</div>
 					</div>
@@ -140,39 +142,43 @@ export default function Textbooks() {
 					<CardContent className="p-4">
 						<div className="flex items-center justify-between mb-3">
 							<div className="text-sm font-semibold">Books</div>
-							<Button size="sm" className="rounded-2xl" onClick={addRow}><Plus className="h-4 w-4 mr-1"/>Add Row</Button>
+							<Button size="sm" className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 
+																		hover:from-green-700/95 hover:to-emerald-700/95 dark:hover:from-green-400/95 dark:hover:to-emerald-400/95
+																		text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30 backdrop-blur-sm border-0
+																		transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+																		font-medium tracking-wide hover:ring-green-300/60 dark:hover:ring-green-300/40" onClick={addRow}><Plus className="h-4 w-4 mr-1"/>Add Row</Button>
 						</div>
 						<div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm">
-							<table className="w-full text-sm">
+							<table className="w-full text-xs">
 								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40">
 									<tr className="text-left">
-										<th className="p-3 w-[50px]"></th>
-										<th className="p-3 w-[220px]">Class</th>
-										<th className="p-3 w-[260px]">Textbook Title</th>
-										<th className="p-3 w-[200px]">Company</th>
-										<th className="p-3 w-[220px]">Book Link</th>
-										<th className="p-3 w-[150px]">Status</th>
-										<th className="p-3 w-[150px]">Purchased On</th>
-										<th className="p-3 w-[150px]">Return By</th>
+										<th className="px-3 py-2 w-[50px]"></th>
+										<th className="px-3 py-2 w-[220px]">Class</th>
+										<th className="px-3 py-2 w-[260px]">Textbook Title</th>
+										<th className="px-3 py-2 w-[200px]">Company</th>
+										<th className="px-3 py-2 w-[220px]">Book Link</th>
+										<th className="px-3 py-2 w-[150px]">Status</th>
+										<th className="px-3 py-2 w-[150px]">Purchased On</th>
+										<th className="px-3 py-2 w-[150px]">Return By</th>
 									</tr>
 								</thead>
 								<tbody>
 									{rows.map(r => (
 										<tr key={r.id} className="border-t border-black/5 dark:border-white/10">
-											<td className="p-2">
+											<td className="px-2 py-2">
 												<Button
 													variant="ghost"
 													size="icon"
-													className="h-8 w-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-black/10 text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:text-neutral-300 dark:hover:text-red-400 dark:hover:bg-red-950/30"
+													className="h-6 w-6 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-black/10 text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:text-neutral-300 dark:hover:text-red-400 dark:hover:bg-red-950/30"
 													aria-label="Delete row"
 													onClick={() => removeRow(r.id)}
 												>
 													<Trash2 className="h-4 w-4 bg-white/80 dark:bg-neutral-900/60 border-black/10" />
 												</Button>
 											</td>
-											<td className="p-2">
+											<td className="px-2 py-2">
 												<Select value={r.classLabel} onValueChange={(v) => setRow(r.id, { classLabel: v })}>
-													<SelectTrigger className="h-8 text-left"><SelectValue placeholder="Select class"/></SelectTrigger>
+													<SelectTrigger className="h-8 text-left text-xs bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40"><SelectValue placeholder="Select class"/></SelectTrigger>
 													<SelectContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-black/10 dark:border-white/10 max-h-72 overflow-auto">
 														{classOptions.length ? classOptions.map(lbl => (
 															<SelectItem key={lbl} value={lbl}>{lbl}</SelectItem>
@@ -182,13 +188,13 @@ export default function Textbooks() {
 													</SelectContent>
 												</Select>
 											</td>
-											<td className="p-2"><Input className="h-8" value={r.title} onChange={(e) => setRow(r.id, { title: e.target.value })} placeholder="Title"/></td>
-											<td className="p-2"><Input className="h-8" value={r.company} onChange={(e) => setRow(r.id, { company: e.target.value })} placeholder="Publisher / Company"/></td>
-											<td className="p-2">
+											<td className="px-2 py-2"><Input className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" value={r.title} onChange={(e) => setRow(r.id, { title: e.target.value })} placeholder="Title"/></td>
+											<td className="px-2 py-2"><Input className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" value={r.company} onChange={(e) => setRow(r.id, { company: e.target.value })} placeholder="Publisher / Company"/></td>
+											<td className="px-2 py-2">
 												{r.status === 'Digital' ? (
 														<div className="flex items-center gap-2 h-8 rounded-lg border border-black/10 dark:border-white/10 bg-white/80 dark:bg-neutral-900/60 px-2">
 															<Input
-																className="h-6 flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-neutral-500"
+																className="h-6 flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-neutral-500 text-xs"
 																placeholder="https://..."
 																value={r.linkUrl || ''}
 																onChange={(e) => setRow(r.id, { linkUrl: e.target.value })}
@@ -227,14 +233,14 @@ export default function Textbooks() {
 															aria-label={r.filePath ? 'Open textbook file' : 'Attach textbook file'}
 															onClick={() => attachOrOpen(r)}
 														>
-																{r.filePath ? 'Attached' : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
+																{r.filePath ? <span className="text-xs">Attached</span> : <LinkIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white" />}
 														</Button>
 													</div>
 												)}
 											</td>
-											<td className="p-2">
+											<td className="px-2 py-2">
 												<Select value={r.status} onValueChange={(v) => setRow(r.id, { status: v as TBStatus })}>
-													<SelectTrigger className="h-8 text-left"><SelectValue placeholder="Status"/></SelectTrigger>
+													<SelectTrigger className="h-8 text-left text-xs bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40"><SelectValue placeholder="Status"/></SelectTrigger>
 													<SelectContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-black/10 dark:border-white/10">
 														{(['Ordered','Shipped','Received','Returned','Digital'] as TBStatus[]).map(s => (
 															<SelectItem key={s} value={s}>{s}</SelectItem>
@@ -242,8 +248,8 @@ export default function Textbooks() {
 													</SelectContent>
 												</Select>
 											</td>
-											<td className="p-2"><Input className="h-8" type="date" value={r.purchasedOn || ''} onChange={(e) => setRow(r.id, { purchasedOn: e.target.value })}/></td>
-											<td className="p-2"><Input className="h-8" type="date" value={r.returnBy || ''} onChange={(e) => setRow(r.id, { returnBy: e.target.value })}/></td>
+											<td className="px-2 py-2"><Input className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" type="date" value={r.purchasedOn || ''} onChange={(e) => setRow(r.id, { purchasedOn: e.target.value })}/></td>
+											<td className="px-2 py-2"><Input className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" type="date" value={r.returnBy || ''} onChange={(e) => setRow(r.id, { returnBy: e.target.value })}/></td>
 										</tr>
 									))}
 								</tbody>
