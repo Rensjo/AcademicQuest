@@ -11,6 +11,7 @@ import Slider from '@/components/ui/slider'
 import { useTheme, PALETTES, type Palette, type Mode } from '@/store/theme'
 import { useSettings, type DefaultRoute, type CurrencyCode, type GPAScale, type PomodoroPosition, type PomodoroSize } from '@/store/settingsStore'
 import { useGamification } from '@/store/gamificationStore'
+import { SoundSettings } from '@/components/SoundSettings'
 // stores imported in backup via localStorage keys; direct hooks not needed here
 
 const scrollbarStyles = `
@@ -537,12 +538,9 @@ export default function Settings() {
 											<Switch checked={settings.confettiEnabled} onCheckedChange={(b)=>settings.set({ confettiEnabled: b })} />
 										</div>
 
-										<div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50/50 dark:bg-neutral-800/30">
-											<div>
-												<label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sound effects</label>
-												<p className="text-xs text-neutral-500 dark:text-neutral-400">Play audio feedback for interactions</p>
-											</div>
-											<Switch checked={settings.soundsEnabled} onCheckedChange={(b)=>settings.set({ soundsEnabled: b })} />
+										{/* Enhanced Sound Settings */}
+										<div className="col-span-1 md:col-span-2">
+											<SoundSettings />
 										</div>
 
 										<div className="col-span-1 md:col-span-2">
