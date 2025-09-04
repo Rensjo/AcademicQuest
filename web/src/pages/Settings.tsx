@@ -588,39 +588,132 @@ export default function Settings() {
 										</div>
 									</div>
 									
-									{/* Enhanced Stats Display */}
-									<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 rounded-2xl bg-gradient-to-br from-neutral-50/80 to-neutral-100/60 dark:from-neutral-800/50 dark:to-neutral-900/40 border border-neutral-200/60 dark:border-neutral-700/60">
-										<div className="text-center">
-											<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40">
-												<span className="text-xl">🎯</span>
-											</div>
-											<div className="text-sm text-neutral-500 dark:text-neutral-400">Level</div>
-											<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{Math.floor(gamification.stats.totalXp / 500) + 1}</div>
-										</div>
-										<div className="text-center">
-											<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40">
-												<span className="text-xl">⚡</span>
-											</div>
-											<div className="text-sm text-neutral-500 dark:text-neutral-400">XP</div>
-											<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{gamification.stats.totalXp}</div>
-										</div>
-										<div className="text-center">
-											<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/40 dark:to-orange-900/40">
-												<span className="text-xl">🏅</span>
-											</div>
-											<div className="text-sm text-neutral-500 dark:text-neutral-400">Badges</div>
-											<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{gamification.stats.badges.length}</div>
-										</div>
-										<div className="text-center">
-											<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40">
-												<span className="text-xl">🔥</span>
-											</div>
-											<div className="text-sm text-neutral-500 dark:text-neutral-400">Streak</div>
-											<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{gamification.stats.streakDays}</div>
-										</div>
-									</div>
+					{/* Enhanced Stats Display */}
+					<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 rounded-2xl bg-gradient-to-br from-neutral-50/80 to-neutral-100/60 dark:from-neutral-800/50 dark:to-neutral-900/40 border border-neutral-200/60 dark:border-neutral-700/60">
+						<div className="text-center">
+							<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40">
+								<span className="text-xl">🎯</span>
+							</div>
+							<div className="text-sm text-neutral-500 dark:text-neutral-400">Level</div>
+							<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{Math.floor(gamification.stats.totalXp / 500) + 1}</div>
+						</div>
+						<div className="text-center">
+							<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40">
+								<span className="text-xl">⚡</span>
+							</div>
+							<div className="text-sm text-neutral-500 dark:text-neutral-400">XP</div>
+							<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{gamification.stats.totalXp}</div>
+						</div>
+						<div className="text-center">
+							<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/40 dark:to-orange-900/40">
+								<span className="text-xl">🏅</span>
+							</div>
+							<div className="text-sm text-neutral-500 dark:text-neutral-400">Badges</div>
+							<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{gamification.stats.badges.filter(b => b.unlocked).length}</div>
+						</div>
+						<div className="text-center">
+							<div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40">
+								<span className="text-xl">🔥</span>
+							</div>
+							<div className="text-sm text-neutral-500 dark:text-neutral-400">Streak</div>
+							<div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{gamification.stats.streakDays}</div>
+						</div>
+					</div>
 
-									{/* Settings Grid */}
+					{/* Earned Badges Display */}
+					{gamification.stats.badges.filter(b => b.unlocked).length > 0 && (
+						<div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-neutral-50/80 to-neutral-100/60 dark:from-neutral-800/50 dark:to-neutral-900/40 border border-neutral-200/60 dark:border-neutral-700/60">
+							<div className="flex items-center gap-3 mb-6">
+								<div className="p-2 rounded-xl bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/40 dark:to-amber-900/40">
+									<span className="text-xl">🏆</span>
+								</div>
+								<div>
+									<h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">Earned Badges</h3>
+									<p className="text-sm text-neutral-600 dark:text-neutral-400">
+										{gamification.stats.badges.filter(b => b.unlocked).length} of {gamification.stats.badges.length} badges unlocked
+									</p>
+								</div>
+							</div>
+							
+							<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+								{gamification.stats.badges
+									.filter(badge => badge.unlocked)
+									.sort((a, b) => {
+										// Sort by rarity (legendary > epic > rare > common) then by name
+										const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 };
+										const rarityDiff = (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+										return rarityDiff !== 0 ? rarityDiff : a.name.localeCompare(b.name);
+									})
+									.map((badge) => (
+										<div 
+											key={badge.id}
+											className={`relative p-4 rounded-2xl text-center transition-all duration-300 hover:scale-105 cursor-pointer shadow-lg hover:shadow-xl ${
+												badge.rarity === 'legendary' 
+													? 'bg-gradient-to-br from-yellow-100 via-amber-100 to-orange-100 dark:from-yellow-900/30 dark:via-amber-900/30 dark:to-orange-900/30 border-2 border-yellow-300/60 dark:border-yellow-600/60' 
+													: badge.rarity === 'epic'
+													? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-rose-900/30 border-2 border-purple-300/60 dark:border-purple-600/60'
+													: badge.rarity === 'rare'
+													? 'bg-gradient-to-br from-blue-100 via-indigo-100 to-cyan-100 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-cyan-900/30 border-2 border-blue-300/60 dark:border-blue-600/60'
+													: 'bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 dark:from-green-900/30 dark:via-emerald-900/30 dark:to-teal-900/30 border-2 border-green-300/60 dark:border-green-600/60'
+											}`}
+											title={`${badge.name}: ${badge.description}${badge.unlockedAt ? ` (Earned: ${new Date(badge.unlockedAt).toLocaleDateString()})` : ''}`}
+										>
+											{/* Rarity indicator */}
+											<div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
+												badge.rarity === 'legendary' 
+													? 'bg-yellow-500 shadow-yellow-300/50' 
+													: badge.rarity === 'epic'
+													? 'bg-purple-500 shadow-purple-300/50'
+													: badge.rarity === 'rare'
+													? 'bg-blue-500 shadow-blue-300/50'
+													: 'bg-green-500 shadow-green-300/50'
+											} shadow-lg`} />
+											
+											<div className="text-3xl mb-2">{badge.icon}</div>
+											<div className="text-sm font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+												{badge.name}
+											</div>
+											<div className="text-xs text-neutral-600 dark:text-neutral-400 leading-tight">
+												{badge.description}
+											</div>
+											
+											{/* Progress indicator for badges with progress */}
+											{badge.maxProgress && badge.maxProgress > 1 && (
+												<div className="mt-2 w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
+													<div 
+														className={`h-1.5 rounded-full transition-all duration-300 ${
+															badge.rarity === 'legendary' ? 'bg-yellow-500' :
+															badge.rarity === 'epic' ? 'bg-purple-500' :
+															badge.rarity === 'rare' ? 'bg-blue-500' : 'bg-green-500'
+														}`}
+														style={{ width: '100%' }}
+													/>
+												</div>
+											)}
+											
+											{/* Completion date */}
+											{badge.unlockedAt && (
+												<div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+													{new Date(badge.unlockedAt).toLocaleDateString()}
+												</div>
+											)}
+										</div>
+									))
+								}
+							</div>
+							
+							{/* Empty state */}
+							{gamification.stats.badges.filter(b => b.unlocked).length === 0 && (
+								<div className="text-center py-8">
+									<div className="text-6xl mb-4 opacity-50">🎯</div>
+									<h3 className="text-lg font-medium text-neutral-600 dark:text-neutral-400 mb-2">No Badges Earned Yet</h3>
+									<p className="text-sm text-neutral-500 dark:text-neutral-500">
+										Complete tasks, attend classes, and maintain streaks to earn your first badges!
+									</p>
+								</div>
+							)}
+						</div>
+					)}									{/* Settings Grid */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 										<div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50/50 dark:bg-neutral-800/30">
 											<div>

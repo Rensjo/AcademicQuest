@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, tasksByTerm, AQTask, TaskStatus } from "@/store/tasksStore";
@@ -65,6 +65,43 @@ export default function Tasks() {
   const activeTerm = React.useMemo(() => activeYear?.terms.find((t) => t.id === activeTermId), [activeYear, activeTermId]);
   const termCourses = React.useMemo(() => (activeTerm?.courses || []).filter((c) => (c.code?.trim() || c.name?.trim())), [activeTerm]);
 
+  // Simplified course lookup - use course.id as the Select value for consistency
+  const getCourseByCourseId = React.useCallback((courseId?: string) => {
+    if (!courseId) return null;
+    
+    // First try to find by the courseId directly (should be course.id)
+    let course = termCourses.find(c => c.id === courseId);
+    
+    // Fallback: try to find by code (uppercase) for backward compatibility
+    if (!course) {
+      course = termCourses.find(c => c.code?.trim().toUpperCase() === courseId.toUpperCase());
+    }
+    
+    // Final fallback: try to find by name
+    if (!course) {
+      course = termCourses.find(c => c.name?.trim() === courseId);
+    }
+    
+    return course;
+  }, [termCourses]);
+
+  // Helper to format course display (optimized for smaller width)
+  const formatCourseDisplay = React.useCallback((course: { code?: string; name?: string }) => {
+    const code = course.code?.trim();
+    const name = course.name?.trim();
+    
+    // For smaller column, prioritize course code and limit name length
+    if (code && name) {
+      // If name is short, show both. If long, truncate name or show code only
+      if (name.length <= 15) {
+        return `${code} — ${name}`;
+      } else {
+        return `${code} — ${name.substring(0, 12)}...`;
+      }
+    }
+    return code || name || 'Untitled';
+  }, []);
+
   // Global tasks store
   const tasks = useTasksStore((s) => s.tasks);
   const addTask = useTasksStore((s) => s.addTask);
@@ -74,6 +111,9 @@ export default function Tasks() {
   // Active-term tasks from store
   const termKey = activeYear && activeTerm ? `${activeYear.id}:${activeTerm.id}` : "";
   const termTasks: AQTask[] = React.useMemo(() => tasksByTerm(tasks, activeYearId, activeTermId), [tasks, activeYearId, activeTermId]);
+
+  // Sorting state
+  const [sortByDeadline, setSortByDeadline] = React.useState(false);
 
   // Placeholder handling (for reaching 20 rows visually)
   const placeholderCount = Math.max(0, 20 - termTasks.length);
@@ -105,7 +145,32 @@ export default function Tasks() {
     () => Array.from({ length: placeholderCount }).map((_, i) => ({ id: `ph:${i}`, courseId: "", title: "", status: "Not Started", dueDate: "", dueTime: "", grade: "" })),
     [placeholderCount]
   );
-  const displayRows: (AQTask | PlaceholderRow)[] = React.useMemo(() => [...termTasks, ...placeholders], [termTasks, placeholders]);
+  const displayRows: (AQTask | PlaceholderRow)[] = React.useMemo(() => {
+    const sortedTasks = [...termTasks];
+    
+    if (sortByDeadline) {
+      // Sort by days left: closest deadline first
+      sortedTasks.sort((a, b) => {
+        const daysA = getDaysLeft(a.dueDate);
+        const daysB = getDaysLeft(b.dueDate);
+        
+        // Handle undefined dates (tasks without due dates go to end)
+        if (daysA === undefined && daysB === undefined) return 0;
+        if (daysA === undefined) return 1;
+        if (daysB === undefined) return -1;
+        
+        // Sort by days left (closest deadline first)
+        const daysDiff = daysA - daysB;
+        if (daysDiff !== 0) return daysDiff;
+        
+        // If same days left, prioritize by status (Not Started and In Progress first)
+        const statusPriority = { "Not Started": 0, "In Progress": 1, "Completed": 2 };
+        return statusPriority[a.status] - statusPriority[b.status];
+      });
+    }
+    
+    return [...sortedTasks, ...placeholders];
+  }, [termTasks, placeholders, sortByDeadline]);
 
   // Only consider "filled" tasks (non-empty title)
   const filled = termTasks.filter(r => (r.title?.trim()?.length ?? 0) > 0);
@@ -125,6 +190,7 @@ export default function Tasks() {
 
   // Term/Yr selection dialog
   const [termDialogOpen, setTermDialogOpen] = React.useState(false);
+  
   function selectYearTerm(yId: string, tId: string) {
     setActiveYearId(yId);
     setActiveTermId(tId);
@@ -252,6 +318,20 @@ export default function Tasks() {
               >
                 <Plus className="h-4 w-4 mr-1"/>Add Task
               </Button>
+              <Button 
+                size="sm" 
+                variant={sortByDeadline ? "default" : "outline"}
+                className={`rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0 
+                          font-medium tracking-wide ${sortByDeadline 
+                    ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30 backdrop-blur-sm border-0 hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95" 
+                    : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 hover:text-blue-700 dark:hover:text-blue-300 shadow-md hover:shadow-lg backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30"
+                  }`}
+                onClick={() => setSortByDeadline(!sortByDeadline)}
+                title={sortByDeadline ? "Disable deadline sorting" : "Sort by closest deadline"}
+              >
+                <Clock className="h-4 w-4 mr-1"/>
+                {sortByDeadline ? "Sorted by Deadline" : "Sort by Deadline"}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-6">
@@ -261,7 +341,7 @@ export default function Tasks() {
                 <thead className="sticky top-0 bg-gradient-to-r from-white/80 to-gray-50/60 dark:from-neutral-800/80 dark:to-neutral-900/60 
                                 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-600/40">
                   <tr className="text-left">
-                    <th className="px-3 py-2 w-[180px] font-semibold text-gray-700 dark:text-gray-200">Course</th>
+                    <th className="px-3 py-2 w-[120px] font-semibold text-gray-700 dark:text-gray-200">Course</th>
                     <th className="px-3 py-2 w-[420px] font-semibold text-gray-700 dark:text-gray-200">Assignment / To‑do</th>
                     <th className="px-3 py-2 w-[150px] font-semibold text-gray-700 dark:text-gray-200">Status</th>
                     <th className="px-3 py-2 w-[140px] font-semibold text-gray-700 dark:text-gray-200">Due Date</th>
@@ -274,18 +354,27 @@ export default function Tasks() {
                 <tbody>
                   {displayRows.map((r) => (
                     <tr key={r.id} className="border-t border-gray-200/40 dark:border-gray-600/30 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
-                      <td className="px-2 py-2">
-                        <Select value={r.courseId ?? ""} onValueChange={(v) => {
-                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                            spawnFromPlaceholder(r.id, { courseId: v });
-                          } else {
-                            updateTask(r.id as string, { courseId: v });
-                          }
-                        }}>
-                          <SelectTrigger className="h-8 rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
+                      <td className="px-2 py-2 w-[120px] max-w-[120px] overflow-hidden">
+                        <Select 
+                          value={getCourseByCourseId(r.courseId)?.id || ""} 
+                          onValueChange={(v) => {
+                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
+                              spawnFromPlaceholder(r.id, { courseId: v });
+                            } else {
+                              updateTask(r.id as string, { courseId: v });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-full rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
                                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                                   transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs">
-                            <SelectValue placeholder="Select course"/>
+                                                   transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs overflow-hidden">
+                            <SelectValue placeholder="Select course">
+                              {getCourseByCourseId(r.courseId) ? (
+                                <span className="block truncate text-left overflow-hidden">{formatCourseDisplay(getCourseByCourseId(r.courseId)!)}</span>
+                              ) : (
+                                <span className="block truncate text-left text-gray-500 dark:text-gray-400">Select course</span>
+                              )}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
                                                    ring-1 ring-gray-200/50 dark:ring-gray-600/50">
@@ -300,7 +389,7 @@ export default function Tasks() {
                                           focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
                                           transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
                               >
-                                {c.code || c.name || 'Untitled'}
+                                <span className="block truncate">{formatCourseDisplay(c)}</span>
                               </SelectItem>
                             ))}
                           </SelectContent>

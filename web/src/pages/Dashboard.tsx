@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme, PALETTES } from '@/store/theme'
-import { useSchedule } from "@/store/scheduleStore";
+import { useSchedule, type DayIndex } from "@/store/scheduleStore";
 import { useSettings } from "@/store/settingsStore";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, isWithinNextNDays, AQTask, TaskStatus } from "@/store/tasksStore";
 import { useStudySessions, minutesByDay } from "@/store/studySessionsStore";
+import { useAttendance } from "@/store/attendanceStore";
 
 import React, { useMemo, useState, useEffect } from "react";
 // import { DashboardQuickTasks } from "@/pages/Tasks";
@@ -27,6 +28,10 @@ import {
   Clock,
   MapPin,
   CalendarX,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  CalendarCheck,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -390,7 +395,9 @@ export default function AcademicQuestDashboard() {
       }
     `;
     document.head.appendChild(style);
-    return () => document.head.removeChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   // router nav
@@ -408,6 +415,22 @@ export default function AcademicQuestDashboard() {
   const addTask = useTasksStore((s) => s.addTask);
   const updateTask = useTasksStore((s) => s.updateTask);
   const studySessions = useStudySessions((s) => s.sessions);
+
+  // Attendance store hooks
+  const { 
+    markAttendance,
+    getAttendanceForDate,
+    addAttendanceRecord
+  } = useAttendance();
+
+  // Attendance dialog state
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedScheduleItem, setSelectedScheduleItem] = useState<{
+    time: string;
+    course: string;
+    room?: string;
+    slotId?: string;
+  } | null>(null);
 
   // Initialize gamification once on mount
   useEffect(() => {
@@ -583,8 +606,97 @@ export default function AcademicQuestDashboard() {
   }
   
   // pull today's classes from the active term in the schedule store
-  const getTodaySlots = useSchedule((s) => s.todaySlots);
-  const todaySlots = React.useMemo(() => getTodaySlots(), [getTodaySlots]);
+  const getActiveTermForDate = useSchedule((s) => s.getActiveTermForDate);
+  
+  // Get today's slots with full slot information including IDs
+  const todaySlots = React.useMemo(() => {
+    const d = new Date();
+    const dow = d.getDay() as DayIndex;
+    
+    // Get the active term for today
+    const active = getActiveTermForDate(d);
+    const term = active?.term;
+    
+    if (!term) return [];
+    
+    // Get actual slot objects with IDs
+    const slots = term.slots.filter(sl => sl.day === dow);
+    return slots
+      .slice()
+      .sort((a, b) => {
+        const toMin = (t: string) => {
+          const [h, m] = t.split(":").map(Number);
+          return h * 60 + m;
+        };
+        return toMin(a.start) - toMin(b.start);
+      })
+      .map(sl => ({
+        time: sl.start,
+        course: sl.title || sl.courseCode || "Class",
+        room: sl.room,
+        slotId: sl.id // Include the actual slot ID
+      }));
+  }, [getActiveTermForDate]);
+
+  // Handle clicking on a schedule item to mark attendance
+  const handleScheduleItemClick = (scheduleItem: { time: string; course: string; room?: string; slotId?: string }) => {
+    setSelectedScheduleItem(scheduleItem);
+    setAttendanceDialogOpen(true);
+  };
+
+  // Mark attendance for the selected class
+  const handleMarkAttendance = async (attended: boolean) => {
+    if (!selectedScheduleItem) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const slotId = selectedScheduleItem.slotId || 
+      `${selectedScheduleItem.time}-${selectedScheduleItem.course}`.replace(/[^a-zA-Z0-9]/g, '-');
+    
+    // Check if attendance record exists for today
+    const todayRecord = getAttendanceForDate(today);
+    
+    if (!todayRecord) {
+      // Create new attendance record for today with this class
+      const classAttendance = {
+        date: today,
+        slotId,
+        courseCode: selectedScheduleItem.course.split(' ')[0] || selectedScheduleItem.course,
+        courseName: selectedScheduleItem.course,
+        attended,
+        marked: true,
+        time: selectedScheduleItem.time,
+        room: selectedScheduleItem.room
+      };
+      
+      addAttendanceRecord(today, [classAttendance]);
+    } else {
+      // Mark attendance for existing record
+      await markAttendance(today, slotId, attended);
+    }
+    
+    // Reward gamification points
+    if (attended) {
+      gamification.addXP(10);
+    }
+    
+    gamification.checkAchievements();
+    setAttendanceDialogOpen(false);
+    setSelectedScheduleItem(null);
+  };
+
+  // Get attendance status for a schedule item
+  const getAttendanceStatus = (scheduleItem: { time: string; course: string; slotId?: string }) => {
+    const today = new Date().toISOString().split('T')[0];
+    const slotId = scheduleItem.slotId || `${scheduleItem.time}-${scheduleItem.course}`.replace(/[^a-zA-Z0-9]/g, '-');
+    const todayRecord = getAttendanceForDate(today);
+    
+    if (!todayRecord) return { marked: false, attended: false };
+    
+    const classRecord = todayRecord.classes.find(c => c.slotId === slotId);
+    if (!classRecord) return { marked: false, attended: false };
+    
+    return { marked: classRecord.marked, attended: classRecord.attended };
+  };
 
 
   const [localCompact, setLocalCompact] = useState(compact);
@@ -1078,6 +1190,7 @@ export default function AcademicQuestDashboard() {
                       ];
                       
                       const scheme = colorSchemes[i % colorSchemes.length];
+                      const attendanceStatus = getAttendanceStatus(s);
                       
                       return (
                         <motion.div
@@ -1100,9 +1213,32 @@ export default function AcademicQuestDashboard() {
                                     border-2 ${scheme.border} shadow-lg hover:shadow-xl 
                                     transition-all duration-300 cursor-pointer backdrop-blur-sm
                                     overflow-hidden`}
+                          onClick={() => handleScheduleItemClick(s)}
                         >
                           {/* Accent line */}
                           <div className={`absolute left-0 top-0 w-1 h-full ${scheme.accent} opacity-60 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                          
+                          {/* Attendance Status Indicator */}
+                          {attendanceStatus.marked && (
+                            <div className={`absolute top-3 right-3 p-1.5 rounded-full ${
+                              attendanceStatus.attended 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-red-500 text-white'
+                            } shadow-lg`}>
+                              {attendanceStatus.attended ? (
+                                <CheckCircle className="h-3 w-3" />
+                              ) : (
+                                <XCircle className="h-3 w-3" />
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Pending Attendance Indicator */}
+                          {!attendanceStatus.marked && (
+                            <div className="absolute top-3 right-3 p-1.5 rounded-full bg-amber-500 text-white shadow-lg animate-pulse">
+                              <AlertCircle className="h-3 w-3" />
+                            </div>
+                          )}
                           
                           {/* Time badge */}
                           <div className="flex items-center justify-between mb-3">
@@ -1127,6 +1263,13 @@ export default function AcademicQuestDashboard() {
                                 {s.room ?? "Room TBA"}
                               </span>
                             </div>
+                          </div>
+                          
+                          {/* Click to mark attendance hint */}
+                          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-black/50 px-2 py-1 rounded-lg backdrop-blur-sm">
+                              Click to mark attendance
+                            </span>
                           </div>
                           
                           {/* Subtle background pattern */}
@@ -1751,6 +1894,96 @@ export default function AcademicQuestDashboard() {
           onClose={() => setGamificationOpen(false)}
           defaultTab={gamificationTab}
         />
+
+        {/* Attendance Dialog */}
+        <Dialog open={attendanceDialogOpen} onOpenChange={setAttendanceDialogOpen}>
+          <DialogContent className="max-w-lg border-0 shadow-2xl rounded-3xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 
+                                    dark:from-neutral-900/95 dark:via-neutral-900/90 dark:to-neutral-800/85 backdrop-blur-md
+                                    ring-1 ring-white/20 dark:ring-white/10">
+            <DialogHeader className="pb-4 border-b border-gray-200/30 dark:border-gray-700/30">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 
+                                    dark:from-blue-400 dark:via-purple-400 dark:to-blue-300 bg-clip-text text-transparent
+                                    flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/30 
+                              border border-blue-100/50 dark:border-blue-800/30 shadow-lg">
+                  <CalendarCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                Mark Attendance
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedScheduleItem && (
+              <div className="py-6">
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-white/80 to-gray-50/60 dark:from-gray-800/80 dark:to-gray-900/60 
+                             border border-gray-200/50 dark:border-gray-700/30 shadow-lg backdrop-blur-sm">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                      {selectedScheduleItem.course}
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                      <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50/80 dark:bg-blue-950/30 
+                                     border border-blue-100/50 dark:border-blue-800/30">
+                        <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span className="font-medium">{selectedScheduleItem.time}</span>
+                      </span>
+                      {selectedScheduleItem.room && (
+                        <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50/80 dark:bg-emerald-950/30 
+                                       border border-emerald-100/50 dark:border-emerald-800/30">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="font-medium">{selectedScheduleItem.room}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                      Did you attend this class today?
+                    </p>
+                    
+                    <div className="flex gap-3">
+                      <Button
+                        className="flex-1 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700
+                                 dark:from-green-500 dark:to-emerald-500 dark:hover:from-green-600 dark:hover:to-emerald-600
+                                 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                 hover:scale-105 active:scale-95 font-medium py-3"
+                        onClick={() => handleMarkAttendance(true)}
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Yes, I Attended
+                      </Button>
+                      <Button
+                        className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700
+                                 dark:from-red-500 dark:to-rose-500 dark:hover:from-red-600 dark:hover:to-rose-600
+                                 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                                 hover:scale-105 active:scale-95 font-medium py-3"
+                        onClick={() => handleMarkAttendance(false)}
+                      >
+                        <XCircle className="w-5 h-5 mr-2" />
+                        No, I Missed It
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter className="pt-6 border-t border-gray-200/30 dark:border-gray-700/30">
+              <Button 
+                variant="outline" 
+                className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                         backdrop-blur-md hover:from-red-50/90 hover:to-pink-50/80 dark:hover:from-red-950/40 dark:hover:to-pink-950/30 
+                         border-gray-200/60 dark:border-gray-600/40 hover:border-red-200/60 dark:hover:border-red-400/30
+                         shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                         text-gray-700 dark:text-gray-200 hover:text-red-700 dark:hover:text-red-300
+                         font-medium tracking-wide px-6 py-2" 
+                onClick={() => setAttendanceDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

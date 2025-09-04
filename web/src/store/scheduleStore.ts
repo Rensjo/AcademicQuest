@@ -1,6 +1,7 @@
 // src/store/scheduleStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { rewardScheduleSetup } from "./gamificationHelpers";
 
 export type DayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6; // Sun..Sat
 
@@ -136,20 +137,36 @@ export const useSchedule = create<ScheduleState>()(
         })),
 
       addSlot: (yearId, termId, slot) =>
-        set((s) => ({
-          years: s.years.map((y) =>
-            y.id !== yearId
-              ? y
-              : {
-                  ...y,
-                  terms: y.terms.map((t) =>
-                    t.id !== termId
-                      ? t
-                      : { ...t, slots: [...t.slots, { id: uid("slot"), ...slot }] }
-                  ),
-                }
-          ),
-        })),
+        set((s) => {
+          const newState = {
+            years: s.years.map((y) =>
+              y.id !== yearId
+                ? y
+                : {
+                    ...y,
+                    terms: y.terms.map((t) =>
+                      t.id !== termId
+                        ? t
+                        : { ...t, slots: [...t.slots, { id: uid("slot"), ...slot }] }
+                    ),
+                  }
+            ),
+          };
+          
+          // Check if this creates a complete weekly schedule (5+ slots across different days)
+          setTimeout(() => {
+            const year = newState.years.find(y => y.id === yearId);
+            const term = year?.terms.find(t => t.id === termId);
+            if (term && term.slots.length >= 5) {
+              const uniqueDays = new Set(term.slots.map(s => s.day));
+              if (uniqueDays.size >= 5) {
+                rewardScheduleSetup();
+              }
+            }
+          }, 0);
+          
+          return newState;
+        }),
 
       updateSlot: (yearId, termId, slot) =>
         set((s) => ({

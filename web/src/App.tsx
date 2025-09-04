@@ -2,6 +2,8 @@ import React from 'react'
 import { Outlet } from 'react-router-dom'
 import { useTheme } from '@/store/theme'
 import { useSettings } from '@/store/settingsStore'
+import NotificationSystem from '@/components/NotificationSystem'
+import { NotificationTestButton } from '@/components/NotificationTestButton'
 
 const FONT_STACKS: Record<string, string> = {
   Inter: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
@@ -44,6 +46,8 @@ export default function App() {
     <div className="app-container">
       {/* Global app shell would go here (like persistent navigation) */}
       <Outlet />
+      <NotificationSystem />
+      <NotificationTestButton />
     </div>
   )
 }

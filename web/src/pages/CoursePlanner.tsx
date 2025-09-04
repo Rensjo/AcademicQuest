@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCoursePlanner } from "@/store/coursePlannerStore";
 import { useSchedule } from "@/store/scheduleStore";
+import { useAcademicPlan } from "@/store/academicPlanStore";
+import { useTasksStore, AQTask, TaskStatus } from "@/store/tasksStore";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/RichTextEditor";
 import { saveToOPFS, getOPFSFileURL } from "@/lib/opfs";
-import { Plus, CalendarDays, Save as SaveIcon, BookOpen, User } from "lucide-react";
+import { Plus, CalendarDays, Save as SaveIcon, BookOpen, User, ClipboardList, Trash2 } from "lucide-react";
 // themed gradient like other pages
 import { useTheme, PALETTES } from "@/store/theme";
 import { useToast } from "@/hooks/use-toast";
@@ -55,20 +57,53 @@ export default function CoursePlanner() {
   }, [theme.accent, theme.mode, theme.palette]);
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const isDark = theme.mode === 'dark' || (theme.mode === 'system' && prefersDark);
-  // current year/term from schedule store
+  // current year/term from schedule store for data sources
   const years = useSchedule((s) => s.years);
-  const selectedYearId = useSchedule((s) => s.selectedYearId);
-  const setSelectedYear = useSchedule((s) => s.setSelectedYear);
+  const scheduleSelectedYearId = useSchedule((s) => s.selectedYearId);
+  
+  // Course Planner's own year/term selection (independent from schedule/academic planners)
+  const coursePlannerSelectedYearId = useCoursePlanner((s) => s.selectedYearId);
+  const coursePlannerSelectedTermId = useCoursePlanner((s) => s.selectedTermId);
+  const setCourseplannerSelectedYear = useCoursePlanner((s) => s.setSelectedYear);
+  const setCourseplannerSelectedTerm = useCoursePlanner((s) => s.setSelectedTerm);
+  
+  // Academic plan for cross-referencing courses
+  const academicYears = useAcademicPlan((s) => s.years);
+  const academicSelectedYearId = useAcademicPlan((s) => s.selectedYearId);
+  
   // No explicit hydration flag; Zustand persist rehydrates synchronously enough for default UI.
   const hydrated = true;
-  const activeYearId = selectedYearId || years[0]?.id;
+  
+  // Use Course Planner's own selection, fallback to schedule selection, then first available
+  const activeYearId = coursePlannerSelectedYearId || scheduleSelectedYearId || years[0]?.id;
   const year = years.find((y) => y.id === activeYearId);
-  const term = year?.terms?.[0]; // or expose a term switch if you want
+  const activeTerm = coursePlannerSelectedTermId 
+    ? year?.terms?.find(t => t.id === coursePlannerSelectedTermId) 
+    : year?.terms?.[0]; // fallback to first term
+
+  // Get academic plan courses for the current term to cross-reference
+  const academicYear = academicYears.find(y => y.id === (academicSelectedYearId || academicYears[0]?.id));
+
+  // Global tasks store
+  const tasks = useTasksStore((s) => s.tasks);
+  const addGlobalTask = useTasksStore((s) => s.addTask);
+  const updateGlobalTask = useTasksStore((s) => s.updateTask);
+  const removeGlobalTask = useTasksStore((s) => s.removeTask);
+
+  // Enhanced Add Task dialog state
+  const [addTaskOpen, setAddTaskOpen] = React.useState(false);
+  const [taskTitle, setTaskTitle] = React.useState("");
+  const [taskDate, setTaskDate] = React.useState("");
+  const [taskTime, setTaskTime] = React.useState("");
+  const [taskStatus, setTaskStatus] = React.useState<TaskStatus>("Not Started");
+
+  // Year/Term selection dialog state
+  const [yearTermOpen, setYearTermOpen] = React.useState(false);
 
   // Ensure key is typed as YearTermKey for store function signatures (only once hydrated)
   const key = React.useMemo<import("@/store/coursePlannerStore").YearTermKey>(
-    () => `${activeYearId || "y"}::${term?.id || "t"}` as import("@/store/coursePlannerStore").YearTermKey,
-    [activeYearId, term?.id]
+    () => `${activeYearId || "y"}::${activeTerm?.id || "t"}` as import("@/store/coursePlannerStore").YearTermKey,
+    [activeYearId, activeTerm?.id]
   );
 
   // course planner store
@@ -80,29 +115,173 @@ export default function CoursePlanner() {
   const addModule = useCoursePlanner((s) => s.addModule);
   const updateModule = useCoursePlanner((s) => s.updateModule);
   const removeModule = useCoursePlanner((s) => s.removeModule);
-  const addTask = useCoursePlanner((s) => s.addTask);
-  const updateTask = useCoursePlanner((s) => s.updateTask);
-  const removeTask = useCoursePlanner((s) => s.removeTask);
   const ensureFolder = useCoursePlanner((s) => s.ensureFolder);
   const renameFolder = useCoursePlanner((s) => s.renameFolder);
   const addFileToFolder = useCoursePlanner((s) => s.addFileToFolder);
   const moveFile = useCoursePlanner((s) => s.moveFile);
+  const updateWeeklyAttendance = useCoursePlanner((s) => s.updateWeeklyAttendance);
+  const getWeeklyAttendance = useCoursePlanner((s) => s.getWeeklyAttendance);
+
+  // Get current week key (YYYY-WW format)
+  const getCurrentWeekKey = () => {
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const weekNumber = Math.ceil(((now.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
+    return `${now.getFullYear()}-${String(weekNumber).padStart(2, '0')}`;
+  };
+
+  const currentWeekKey = getCurrentWeekKey();
+  const currentCourse = courses.find(c => c.id === selectedCourseId);
+  const weeklyAttendance = currentCourse ? getWeeklyAttendance(key, currentCourse.id, currentWeekKey) : Array.from({ length: 7 }, () => false);
+
+  // Handle attendance checkbox changes
+  const handleAttendanceChange = (dayIndex: number, checked: boolean) => {
+    if (currentCourse) {
+      updateWeeklyAttendance(key, currentCourse.id, currentWeekKey, dayIndex, checked);
+    }
+  };
 
   // ensure one demo course on first use
   React.useEffect(() => {
     if (!hydrated) return;
-    // Ensure a selected year is set after hydration
-    if (!selectedYearId && years[0]?.id) setSelectedYear(years[0].id);
-    if (!courses.length && activeYearId && term?.id) {
+    // Initialize Course Planner's own year/term selection if not set
+    if (!coursePlannerSelectedYearId && activeYearId) setCourseplannerSelectedYear(activeYearId);
+    if (!coursePlannerSelectedTermId && activeTerm?.id) setCourseplannerSelectedTerm(activeTerm.id);
+    
+    if (!courses.length && activeYearId && activeTerm?.id) {
       const id = addCourse(key, { title: "Course Title", code: "" });
       setSelectedCourse(id);
     }
-  }, [hydrated, courses.length, activeYearId, term?.id, addCourse, setSelectedCourse, key, selectedYearId, years, setSelectedYear]);
+  }, [hydrated, courses.length, activeYearId, activeTerm?.id, addCourse, setSelectedCourse, key, coursePlannerSelectedYearId, coursePlannerSelectedTermId, setCourseplannerSelectedYear, setCourseplannerSelectedTerm]);
 
   const course = courses.find((c) => c.id === selectedCourseId) || courses[0];
 
+  // Filter global tasks for current course - comprehensive matching across all systems
+  const courseTasks = React.useMemo(() => {
+    if (!course || !tasks || tasks.length === 0) {
+      console.log('🔍 CoursePlanner: No course or no tasks', { course, tasksLength: tasks?.length || 0 });
+      return [];
+    }
+    
+    // Get all possible course identifiers for this course
+    const courseIdentifiers = [
+      course.code?.trim().toUpperCase(),
+      course.code?.trim(),
+      course.code?.trim().toLowerCase(),
+      course.title?.trim(),
+      course.id,
+    ].filter(Boolean); // Remove empty/null values
+    
+    // Get academic courses for cross-referencing
+    const academicCourses = academicYear?.terms?.[0]?.courses || [];
+    
+    // Also check if this course matches any academic plan courses
+    const matchingAcademicCourse = academicCourses.find(ac => 
+      (ac.code?.trim() && course.code?.trim() && ac.code.trim().toUpperCase() === course.code.trim().toUpperCase()) ||
+      (ac.name?.trim() && course.title?.trim() && ac.name.trim() === course.title.trim())
+    );
+    
+    if (matchingAcademicCourse) {
+      courseIdentifiers.push(
+        matchingAcademicCourse.code?.trim().toUpperCase(),
+        matchingAcademicCourse.code?.trim(),
+        matchingAcademicCourse.name?.trim(),
+        matchingAcademicCourse.id
+      );
+    }
+    
+    // Remove duplicates and filter out empty values
+    const uniqueIdentifiers = [...new Set(courseIdentifiers)].filter(Boolean);
+    
+    console.log('🔍 CoursePlanner Comprehensive Debug:', {
+      course: { 
+        id: course.id, 
+        code: course.code, 
+        title: course.title 
+      },
+      matchingAcademicCourse,
+      uniqueIdentifiers,
+      allTasks: tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        courseId: t.courseId,
+        yearId: t.yearId,
+        termId: t.termId
+      })),
+      totalTasks: tasks.length
+    });
+    
+    // Filter tasks that match any of the course identifiers
+    const matchedTasks = tasks.filter(task => {
+      if (!task.courseId) return false;
+      
+      // Check if task's courseId matches any of our course identifiers
+      const matches = uniqueIdentifiers.some(identifier => {
+        // Exact match
+        if (task.courseId === identifier) return true;
+        
+        // Case-insensitive match
+        if (task.courseId.toUpperCase() === identifier?.toUpperCase()) return true;
+        
+        return false;
+      });
+      
+      if (matches) {
+        console.log(`✅ Task matched: "${task.title}" (courseId: "${task.courseId}") matches course "${course.code || course.title}"`);
+      }
+      
+      return matches;
+    });
+    
+    console.log(`🎯 Found ${matchedTasks.length} tasks for course "${course.code || course.title}":`, matchedTasks);
+    return matchedTasks;
+  }, [tasks, course, academicYear]);
+
+  // Add task function
+  const commitAddTask = () => {
+    if (!taskTitle.trim() || !activeYearId || !activeTerm?.id || !course?.id) {
+      setAddTaskOpen(false);
+      return;
+    }
+
+    // Use course code as courseId for consistency, fallback to title, then ID
+    const courseId = course.code?.trim().toUpperCase() || course.title?.trim() || course.id;
+
+    console.log('➕ Adding task from Course Planner:', {
+      courseId,
+      course: { code: course.code, title: course.title, id: course.id },
+      task: taskTitle.trim()
+    });
+
+    const newTask: AQTask = {
+      id: crypto.randomUUID(),
+      yearId: activeYearId,
+      termId: activeTerm.id,
+      courseId: courseId,
+      title: taskTitle.trim(),
+      status: taskStatus,
+      dueDate: taskDate || undefined,
+      dueTime: taskTime || undefined,
+      grade: undefined,
+    };
+
+    addGlobalTask(newTask);
+    
+    // Reset form
+    setTaskTitle("");
+    setTaskDate("");
+    setTaskTime("");
+    setTaskStatus("Not Started");
+    setAddTaskOpen(false);
+    
+    toast({
+      title: "Task Added",
+      description: `Added "${taskTitle.trim()}" to ${course.code || course.title}`,
+    });
+  };
+
   // ------- auto-sync Class Time + Room from Schedule Planner -------
-  const scheduleTerm = term;
+  const scheduleTerm = activeTerm;
   // Live sync: if Course code/title matches a slot, use its time/room; 
   // if a slot is chosen once, remember by id for stability until data changes.
   const classMeta = React.useMemo((): { time: string; room: string; slotId?: string } => {
@@ -152,7 +331,7 @@ export default function CoursePlanner() {
   const onUpload = async (path: string, files: FileList | null) => {
     if (!files || !course) return;
     for (const f of Array.from(files)) {
-      const opfsPath = `AQ/Courses/${activeYearId}/${term?.id}/${course.id}/${path}/${f.name}`;
+      const opfsPath = `AQ/Courses/${activeYearId}/${activeTerm?.id}/${course.id}/${path}/${f.name}`;
       const res = await saveToOPFS(opfsPath, f);
       addFileToFolder(key, course.id, path, {
         id: Math.random().toString(36).slice(2, 8),
@@ -218,7 +397,7 @@ export default function CoursePlanner() {
     const html = liveHtml;
   const titleSlug = (mod.title || activeModuleId).replace(/[^\w-]+/g, "-");
     const yearPart = activeYearId || "year";
-    const termPart = term?.id || "term";
+    const termPart = activeTerm?.id || "term";
     const fileName = `${titleSlug || "module"}.html`;
     const path = `AQ/Courses/${yearPart}/${termPart}/${course.id}/notes/${fileName}`;
     try {
@@ -245,7 +424,7 @@ export default function CoursePlanner() {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ title: "Save failed", description: msg });
     }
-  }, [course, activeModuleId, updateModule, key, activeYearId, term?.id, toast]);
+  }, [course, activeModuleId, updateModule, key, activeYearId, activeTerm?.id, toast]);
 
   // Save on unmount (navigate away/refresh) - ensure last content is persisted into store
   React.useEffect(() => {
@@ -344,9 +523,10 @@ export default function CoursePlanner() {
                           border border-gray-200/60 dark:border-gray-600/40 hover:border-blue-200/60 dark:hover:border-blue-400/30
                           transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
                           font-medium tracking-wide" 
-                onClick={() => setSelectedCourse(addCourse(key, { title: "New Course" }))}
+                onClick={() => setYearTermOpen(true)}
+                title="Select school year and term"
               >
-                <Plus className="h-4 w-4 mr-1" /> Add Course
+                {year?.label || "Select Year"} {activeTerm ? `• ${activeTerm.name || `Term ${activeTerm.id}`}` : ""} <span className="ml-1 opacity-60">▼</span>
               </Button>
             </div>
           </div>
@@ -378,6 +558,8 @@ export default function CoursePlanner() {
                     >
                       <input
                         type="checkbox"
+                        checked={weeklyAttendance[idx] || false}
+                        onChange={(e) => handleAttendanceChange(idx, e.target.checked)}
                         className="h-4 w-4 accent-blue-600 dark:accent-blue-400 rounded transition-all duration-200 group-hover:scale-110"
                       />
                       <span className="mt-2 text-gray-600 dark:text-gray-300 font-medium group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors duration-200">{d}</span>
@@ -386,13 +568,13 @@ export default function CoursePlanner() {
                 </div>
                 <div className="mt-4 p-3 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/40 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200/30 dark:border-blue-700/30">
                   <div className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                    ✓ Track your weekly attendance and completion progress
+                    ✓ Track your weekly attendance and completion progress to track your weekly scheduled classes for this course
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Task Tracker (per-course) */}
+            {/* Task Tracker (synced with global tasks) */}
             <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -406,77 +588,73 @@ export default function CoursePlanner() {
                               border border-gray-200/60 dark:border-gray-600/40 hover:border-green-200/60 dark:hover:border-green-400/30
                               transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
                               font-medium tracking-wide"
-                    onClick={() =>
-                      addTask(key, course!.id, {
-                        id: Math.random().toString(36).slice(2, 8),
-                        title: "New Task",
-                        status: "in-progress",
-                      })
-                    }
+                    onClick={() => setAddTaskOpen(true)}
                   >
                     <Plus className="h-4 w-4 mr-1" /> Add Task
                   </Button>
                 </div>
 
                 <div className="space-y-2">
-                  {course?.tasks.map((t) => (
-                    <div
-                      key={t.id}
-                      className="grid grid-cols-[1fr_160px_160px_120px] gap-3 items-center p-2 rounded-xl border border-black/10 dark:border-white/10"
-                    >
-                      <Input
-                        value={t.title}
-                        onChange={(e) => updateTask(key, course!.id, { ...t, title: e.target.value })}
-                      />
-                      <Input
-                        type="datetime-local"
-                        value={t.due || ""}
-                        onChange={(e) => updateTask(key, course!.id, { ...t, due: e.target.value })}
-                      />
-                      <select
-                        className="h-9 rounded-xl border border-black/10 bg-white dark:bg-neutral-900 px-3"
-                        value={t.status}
-                        onChange={(e) =>
-                          updateTask(key, course!.id, {
-                            ...t,
-                            status: e.target.value as import("@/store/coursePlannerStore").Course["tasks"][number]["status"],
-                          })
-                        }
+                  {courseTasks.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No tasks for this course yet.</p>
+                      <p className="text-xs mt-1">Click "Add Task" to get started!</p>
+                    </div>
+                  ) : (
+                    courseTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="grid grid-cols-[1fr_auto_auto] gap-3 items-center p-3 rounded-xl 
+                                 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                                 border border-gray-200/60 dark:border-gray-600/40 shadow-sm hover:shadow-md
+                                 transition-all duration-200"
                       >
-                        <option value="in-progress">In-Progress</option>
-                        <option value="complete">Complete</option>
-                        <option value="overdue">Overdue</option>
-                      </select>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          className="w-[90px]"
-                          type="number"
-                          step="0.1"
-                          value={t.grade ?? ""}
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                            {task.title}
+                          </div>
+                          {task.dueDate && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Due: {new Date(task.dueDate).toLocaleDateString()}
+                              {task.dueTime && ` at ${task.dueTime}`}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <select
+                          className="h-8 rounded-lg border border-gray-200/60 dark:border-gray-600/40 
+                                   bg-white/90 dark:bg-gray-800/90 px-2 text-xs
+                                   focus:border-blue-400/60 dark:focus:border-purple-400/60
+                                   focus:ring-2 focus:ring-blue-100/50 dark:focus:ring-purple-900/30"
+                          value={task.status}
                           onChange={(e) =>
-                            updateTask(key, course!.id, {
-                              ...t,
-                              grade: e.target.value === "" ? undefined : Number(e.target.value),
+                            updateGlobalTask(task.id, {
+                              status: e.target.value as TaskStatus,
                             })
                           }
-                          placeholder="%"
-                        />
+                        >
+                          <option value="Not Started">🔄 Not Started</option>
+                          <option value="In Progress">⚡ In Progress</option>
+                          <option value="Completed">✅ Completed</option>
+                        </select>
+                        
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="rounded-2xl bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
+                          className="rounded-lg bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 
                                     text-gray-700 dark:text-gray-200 hover:from-red-50/90 hover:to-red-100/80 dark:hover:from-red-950/40 dark:hover:to-red-900/30 
-                                    hover:text-red-700 dark:hover:text-red-300 shadow-md hover:shadow-lg backdrop-blur-sm 
+                                    hover:text-red-700 dark:hover:text-red-300 shadow-sm hover:shadow-md backdrop-blur-sm 
                                     border border-gray-200/60 dark:border-gray-600/40 hover:border-red-200/60 dark:hover:border-red-400/30
-                                    transition-all duration-200 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0
-                                    font-medium tracking-wide" 
-                          onClick={() => removeTask(key, course!.id, t.id)}
+                                    transition-all duration-200 hover:scale-105 active:scale-95
+                                    font-medium tracking-wide h-8 px-2" 
+                          onClick={() => removeGlobalTask(task.id)}
                         >
-                          Remove
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -905,6 +1083,224 @@ export default function CoursePlanner() {
               }}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enhanced Add Task dialog */}
+      <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
+        <DialogContent className="max-w-lg border-0 shadow-2xl rounded-3xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 
+                                dark:from-neutral-900/95 dark:via-neutral-900/90 dark:to-neutral-800/85 backdrop-blur-md
+                                ring-1 ring-white/20 dark:ring-white/10">
+          <DialogHeader className="pb-4 border-b border-gray-200/30 dark:border-gray-700/30">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 
+                                  dark:from-blue-400 dark:via-purple-400 dark:to-blue-300 bg-clip-text text-transparent
+                                  flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/30 
+                            border border-blue-100/50 dark:border-blue-800/30 shadow-lg">
+                <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              Add Task to {course?.code || course?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-5 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></span>
+                Task Title
+              </label>
+              <Input 
+                value={taskTitle} 
+                onChange={(e) => setTaskTitle(e.target.value)} 
+                placeholder="e.g., Assignment 3, Lab Report, Final Project..." 
+                className="rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                         bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                         backdrop-blur-md focus:border-blue-400/60 dark:focus:border-purple-400/60
+                         focus:ring-4 focus:ring-blue-100/50 dark:focus:ring-purple-900/30
+                         transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                         text-gray-800 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400
+                         h-11 px-4"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"></span>
+                  Due Date
+                </label>
+                <Input 
+                  type="date" 
+                  value={taskDate} 
+                  onChange={(e) => setTaskDate(e.target.value)} 
+                  className="rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                           bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                           backdrop-blur-md focus:border-emerald-400/60 dark:focus:border-teal-400/60
+                           focus:ring-4 focus:ring-emerald-100/50 dark:focus:ring-teal-900/30
+                           transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                           text-gray-800 dark:text-gray-200 h-11 px-4"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"></span>
+                  Due Time
+                </label>
+                <Input 
+                  type="time" 
+                  value={taskTime} 
+                  onChange={(e) => setTaskTime(e.target.value)} 
+                  className="rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                           bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                           backdrop-blur-md focus:border-amber-400/60 dark:focus:border-orange-400/60
+                           focus:ring-4 focus:ring-amber-100/50 dark:focus:ring-orange-900/30
+                           transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                           text-gray-800 dark:text-gray-200 h-11 px-4"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"></span>
+                Status
+              </label>
+              <select 
+                className="w-full h-11 px-4 rounded-xl border-2 border-gray-200/60 dark:border-gray-600/40 
+                         bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80
+                         backdrop-blur-md focus:border-purple-400/60 dark:focus:border-pink-400/60
+                         focus:ring-4 focus:ring-purple-100/50 dark:focus:ring-pink-900/30
+                         transition-all duration-300 hover:shadow-lg focus:shadow-xl
+                         text-gray-800 dark:text-gray-200 cursor-pointer
+                         focus:outline-none appearance-none"
+                value={taskStatus} 
+                onChange={(e)=> setTaskStatus(e.target.value as TaskStatus)}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em 1.5em',
+                  paddingRight: '2.5rem'
+                }}
+              >
+                <option value="Not Started">🔄 Not Started</option>
+                <option value="In Progress">⚡ In Progress</option>
+                <option value="Completed">✅ Completed</option>
+              </select>
+            </div>
+          </div>
+          
+          <DialogFooter className="pt-6 border-t border-gray-200/30 dark:border-gray-700/30 gap-3">
+            <Button 
+              variant="outline" 
+              className="rounded-2xl border-2 bg-gradient-to-r from-white/90 to-gray-50/80 dark:from-gray-800/90 dark:to-gray-900/80 
+                       backdrop-blur-md hover:from-red-50/90 hover:to-pink-50/80 dark:hover:from-red-950/40 dark:hover:to-pink-950/30 
+                       border-gray-200/60 dark:border-gray-600/40 hover:border-red-200/60 dark:hover:border-red-400/30
+                       shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                       text-gray-700 dark:text-gray-200 hover:text-red-700 dark:hover:text-red-300
+                       font-medium tracking-wide px-6 py-2 flex-1" 
+              onClick={() => setAddTaskOpen(false)}
+            >
+              <span className="relative z-10">Cancel</span>
+            </Button>
+            <Button 
+              className="rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 
+                       dark:from-blue-500 dark:via-purple-500 dark:to-blue-600
+                       hover:from-blue-700 hover:via-purple-700 hover:to-blue-800
+                       dark:hover:from-blue-600 dark:hover:via-purple-600 dark:hover:to-blue-700
+                       shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95
+                       text-white font-medium tracking-wide px-6 py-2 flex-1
+                       border-0 ring-2 ring-blue-200/50 dark:ring-purple-400/30"
+              onClick={commitAddTask}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <span>Add Task</span>
+                <span className="text-lg">✨</span>
+              </span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Year/Term Selection Dialog */}
+      <Dialog open={yearTermOpen} onOpenChange={setYearTermOpen}>
+        <DialogContent className="max-w-lg bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+          <DialogHeader className="pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+            <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+              Select School Year & Term
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* Year Selection */}
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">School Year</Label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {years.length === 0 ? (
+                  <div className="text-sm text-muted-foreground p-4 text-center bg-gray-50/50 dark:bg-neutral-800/50 rounded-xl">
+                    No school years available. Please add years in Schedule Planner first.
+                  </div>
+                ) : (
+                  years.map((y) => (
+                    <Button
+                      key={y.id}
+                      variant={y.id === activeYearId ? "default" : "outline"}
+                      className={`w-full justify-start rounded-2xl transition-all duration-200 font-medium tracking-wide h-10
+                        ${y.id === activeYearId 
+                          ? "bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90 text-white shadow-lg ring-2 ring-blue-200/50 dark:ring-blue-400/30" 
+                          : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30"
+                        }
+                        hover:scale-[1.02] active:scale-[0.98]`}
+                      onClick={() => {
+                        setCourseplannerSelectedYear(y.id);
+                        // Reset term selection when year changes
+                        if (y.terms?.[0]) {
+                          setCourseplannerSelectedTerm(y.terms[0].id);
+                        }
+                      }}
+                    >
+                      {y.label}
+                    </Button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Term Selection */}
+            {year?.terms && year.terms.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">Term</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {year.terms.map((t) => (
+                    <Button
+                      key={t.id}
+                      variant={t.id === activeTerm?.id ? "default" : "outline"}
+                      className={`justify-center rounded-2xl transition-all duration-200 font-medium tracking-wide h-10
+                        ${t.id === activeTerm?.id 
+                          ? "bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90 text-white shadow-lg ring-2 ring-green-200/50 dark:ring-green-400/30" 
+                          : "bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/80 dark:to-neutral-900/70 text-gray-700 dark:text-gray-200 hover:from-green-50/90 hover:to-emerald-50/80 dark:hover:from-green-950/40 dark:hover:to-emerald-950/30"
+                        }
+                        hover:scale-[1.02] active:scale-[0.98]`}
+                      onClick={() => setCourseplannerSelectedTerm(t.id)}
+                    >
+                      {t.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+            <Button
+              onClick={() => setYearTermOpen(false)}
+              className="rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 dark:from-blue-500/90 dark:to-indigo-500/90
+                        hover:from-blue-700/95 hover:to-indigo-700/95 dark:hover:from-blue-400/95 dark:hover:to-indigo-400/95
+                        text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 
+                        hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-0.5 active:translate-y-0
+                        font-medium tracking-wide backdrop-blur-md"
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

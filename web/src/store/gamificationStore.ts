@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { notificationService } from '@/services/notificationService'
 
 export type BadgeType = 
   | 'first_task' | 'task_streak' | 'early_bird' | 'perfect_week' | 'study_warrior'
@@ -7,6 +8,8 @@ export type BadgeType =
   | 'consistency_king' | 'semester_starter' | 'perfect_attendance' | 'attendance_streak'
   | 'first_class' | 'class_warrior' | 'attendance_champion' | 'never_miss' | 'semester_perfect'
   | 'monthly_perfect' | 'attendance_legend' | 'class_dedication'
+  | 'gpa_achiever' | 'academic_foundation' | 'course_planner' | 'schedule_architect'
+  | 'semester_organizer' | 'academic_starter' | 'grade_warrior' | 'dean_list'
 
 export interface Badge {
   id: BadgeType
@@ -58,6 +61,7 @@ interface GamificationState {
   addXP: (amount: number) => void
   unlockBadge: (badgeId: BadgeType) => void
   completeQuest: (questId: string) => void
+  updateQuestProgress: (type: 'task' | 'study' | 'schedule' | 'academic', amount?: number) => void
   generateDailyQuests: () => void
   checkAchievements: () => void
   resetStreak: () => void
@@ -274,6 +278,86 @@ const INITIAL_BADGES: Badge[] = [
     unlocked: false,
     maxProgress: 200,
     progress: 0
+  },
+  {
+    id: 'gpa_achiever',
+    name: 'GPA Achiever',
+    description: 'Achieve a 3.0 GPA or higher',
+    icon: '📊',
+    rarity: 'rare',
+    unlocked: false,
+    maxProgress: 1,
+    progress: 0
+  },
+  {
+    id: 'academic_foundation',
+    name: 'Academic Foundation',
+    description: 'Maintain a 3.5+ GPA for 30 days',
+    icon: '🏛️',
+    rarity: 'epic',
+    unlocked: false,
+    maxProgress: 30,
+    progress: 0
+  },
+  {
+    id: 'course_planner',
+    name: 'Course Planner',
+    description: 'Add your first course to the course planner',
+    icon: '📋',
+    rarity: 'common',
+    unlocked: false,
+    maxProgress: 1,
+    progress: 0
+  },
+  {
+    id: 'schedule_architect',
+    name: 'Schedule Architect',
+    description: 'Set up a complete weekly schedule with all courses',
+    icon: '🏗️',
+    rarity: 'rare',
+    unlocked: false,
+    maxProgress: 1,
+    progress: 0
+  },
+  {
+    id: 'semester_organizer',
+    name: 'Semester Organizer',
+    description: 'Plan courses for an entire semester (5+ courses)',
+    icon: '🗂️',
+    rarity: 'epic',
+    unlocked: false,
+    maxProgress: 5,
+    progress: 0
+  },
+  {
+    id: 'academic_starter',
+    name: 'Academic Starter',
+    description: 'Set up both course planner and schedule for the first time',
+    icon: '🎯',
+    rarity: 'rare',
+    unlocked: false,
+    maxProgress: 1,
+    progress: 0
+  },
+  {
+    id: 'grade_warrior',
+    name: 'Grade Warrior',
+    description: 'Track grades for 10+ assignments',
+    icon: '⚔️',
+    rarity: 'rare',
+    unlocked: false,
+    maxProgress: 10,
+    progress: 0
+  },
+  {
+    id: 'dean_list',
+    name: 'Dean\'s List',
+    description: 'Achieve a 3.8+ GPA for a full semester',
+    icon: '🎖️',
+    rarity: 'legendary',
+    unlocked: false,
+    maxProgress: 1,
+    progress: 0
   }
 ]
 
@@ -342,8 +426,9 @@ export const useGamification = create<GamificationState>()(
       addXP: (amount) => set((state) => {
         const newTotalXP = state.stats.totalXp + amount
         const newLevel = calculateLevelFromXP(newTotalXP)
+        const oldLevel = state.stats.level
         
-        return {
+        const newState = {
           stats: {
             ...state.stats,
             xp: state.stats.xp + amount,
@@ -352,27 +437,98 @@ export const useGamification = create<GamificationState>()(
             nextLevelXp: calculateNextLevelXP(newLevel)
           }
         }
+        
+        // Trigger level up notification if level increased
+        if (newLevel > oldLevel) {
+          // Use setTimeout to trigger notification after state update
+          setTimeout(() => {
+            notificationService.showLevelUpNotification(newLevel, amount)
+          }, 0)
+        }
+        
+        return newState
       }),
 
-      unlockBadge: (badgeId) => set((state) => ({
-        stats: {
-          ...state.stats,
-          badges: state.stats.badges.map(badge =>
-            badge.id === badgeId
-              ? { ...badge, unlocked: true, unlockedAt: new Date().toISOString() }
-              : badge
-          )
+      unlockBadge: (badgeId) => set((state) => {
+        const badge = state.stats.badges.find(b => b.id === badgeId)
+        const newState = {
+          stats: {
+            ...state.stats,
+            badges: state.stats.badges.map(badge =>
+              badge.id === badgeId
+                ? { ...badge, unlocked: true, unlockedAt: new Date().toISOString() }
+                : badge
+            )
+          }
         }
-      })),
+        
+        // Trigger badge notification
+        if (badge && !badge.unlocked) {
+          setTimeout(() => {
+            notificationService.showBadgeNotification(badge.name, badge.icon, badgeId)
+          }, 0)
+        }
+        
+        return newState
+      }),
 
-      completeQuest: (questId) => set((state) => ({
-        stats: {
-          ...state.stats,
-          dailyQuests: state.stats.dailyQuests.map(quest =>
-            quest.id === questId ? { ...quest, completed: true } : quest
-          )
+      completeQuest: (questId) => set((state) => {
+        const quest = state.stats.dailyQuests.find(q => q.id === questId)
+        const newState = {
+          stats: {
+            ...state.stats,
+            dailyQuests: state.stats.dailyQuests.map(quest =>
+              quest.id === questId ? { ...quest, completed: true } : quest
+            )
+          }
         }
-      })),
+        
+        // Trigger quest completion notification
+        if (quest && !quest.completed) {
+          setTimeout(() => {
+            notificationService.showQuestCompletedNotification(quest.title, quest.xpReward)
+          }, 0)
+        }
+        
+        return newState
+      }),
+
+      updateQuestProgress: (type, amount = 1) => set((state) => {
+        const today = new Date().toISOString().split('T')[0]
+        
+        const updatedQuests = state.stats.dailyQuests.map(quest => {
+          // Only update quests for today that match the type and aren't completed
+          if (quest.date === today && quest.type === type && !quest.completed) {
+            const newProgress = Math.min(quest.progress + amount, quest.target)
+            const isCompleted = newProgress >= quest.target
+            
+            // If quest is completed, trigger notification and add XP
+            if (isCompleted && !quest.completed) {
+              setTimeout(() => {
+                notificationService.showQuestCompletedNotification(quest.title, quest.xpReward)
+                
+                // Add XP reward for completing the quest
+                const store = useGamification.getState()
+                store.addXP(quest.xpReward)
+              }, 100)
+            }
+            
+            return {
+              ...quest,
+              progress: newProgress,
+              completed: isCompleted
+            }
+          }
+          return quest
+        })
+        
+        return {
+          stats: {
+            ...state.stats,
+            dailyQuests: updatedQuests
+          }
+        }
+      }),
 
       generateDailyQuests: () => set((state) => {
         const today = new Date().toISOString().split('T')[0]
@@ -495,6 +651,46 @@ export const useGamification = create<GamificationState>()(
             case 'class_dedication':
               newProgress = stats.classesAttended
               shouldUnlock = stats.classesAttended >= 200
+              break
+            case 'gpa_achiever':
+              // This will be checked from course planner when GPA is calculated
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 1
+              break
+            case 'academic_foundation':
+              // This will be checked from course planner for maintaining GPA
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 30
+              break
+            case 'course_planner':
+              // This will be triggered when first course is added
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 1
+              break
+            case 'schedule_architect':
+              // This will be triggered when weekly schedule is set up
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 1
+              break
+            case 'semester_organizer':
+              // This will be triggered when 5+ courses are planned
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 5
+              break
+            case 'academic_starter':
+              // This will be triggered when both course and schedule are set up
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 1
+              break
+            case 'grade_warrior':
+              // This will be triggered when tracking 10+ assignments
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 10
+              break
+            case 'dean_list':
+              // This will be triggered when achieving 3.8+ GPA
+              newProgress = badge.progress || 0
+              shouldUnlock = newProgress >= 1
               break
           }
 

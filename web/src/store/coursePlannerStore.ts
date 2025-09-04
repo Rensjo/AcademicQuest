@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { rewardFirstCourse, checkSemesterOrganizer, checkGPABadges, rewardGradeEntry, checkGradeWarrior } from "./gamificationHelpers";
 
 export type CourseId = string;
 
@@ -10,6 +11,8 @@ export type Course = {
   instructor?: string;
   syllabusUrl?: string;
   linkedSlotId?: string; // optional explicit link to a Schedule slot
+  // Weekly attendance tracking (0=Sunday, 1=Monday, ..., 6=Saturday, 7=Sunday2)
+  weeklyAttendance: Record<string, boolean[]>; // key = week identifier (YYYY-MM-DD of Monday), value = [S,M,T,W,Th,F,S2]
   // Note modules
   modules: Array<{ id: string; title: string; html: string }>;
   // Tasks for this course
@@ -33,8 +36,12 @@ export type YearTermKey = `${string}::${string}`; // `${yearId}::${termId}`
 type State = {
   byYearTerm: Record<YearTermKey, Course[]>;
   selectedCourseId?: CourseId;
+  selectedYearId?: string;
+  selectedTermId?: string;
 
   setSelectedCourse: (id?: CourseId) => void;
+  setSelectedYear: (id?: string) => void;
+  setSelectedTerm: (id?: string) => void;
 
   addCourse: (key: YearTermKey, data?: Partial<Course>) => CourseId;
   updateCourse: (key: YearTermKey, course: Course) => void;
@@ -47,6 +54,10 @@ type State = {
   addTask: (key: YearTermKey, courseId: CourseId, task: Course["tasks"][number]) => void;
   updateTask: (key: YearTermKey, courseId: CourseId, task: Course["tasks"][number]) => void;
   removeTask: (key: YearTermKey, courseId: CourseId, taskId: string) => void;
+
+  // Weekly attendance management
+  updateWeeklyAttendance: (key: YearTermKey, courseId: CourseId, weekKey: string, dayIndex: number, attended: boolean) => void;
+  getWeeklyAttendance: (key: YearTermKey, courseId: CourseId, weekKey: string) => boolean[];
 
   ensureFolder: (key: YearTermKey, courseId: CourseId, path: string) => void;
   renameFolder: (key: YearTermKey, courseId: CourseId, folderId: string, newPath: string) => void;
@@ -69,11 +80,15 @@ const uid = (p = "id") => `${p}_${Math.random().toString(36).slice(2, 8)}`;
 
 export const useCoursePlanner = create<State>()(
   persist(
-  (set) => ({
+  (set, get) => ({
       byYearTerm: {},
       selectedCourseId: undefined,
+      selectedYearId: undefined,
+      selectedTermId: undefined,
 
       setSelectedCourse: (id) => set({ selectedCourseId: id }),
+      setSelectedYear: (id) => set({ selectedYearId: id }),
+      setSelectedTerm: (id) => set({ selectedTermId: id }),
 
       addCourse: (key, data) => {
         const id = uid("course");
@@ -84,17 +99,35 @@ export const useCoursePlanner = create<State>()(
           instructor: data?.instructor,
           syllabusUrl: data?.syllabusUrl,
           linkedSlotId: data?.linkedSlotId,
+          weeklyAttendance: {}, // Initialize empty weekly attendance
           modules: [{ id: uid("m"), title: "M1", html: "" }],
           tasks: [],
           folders: [{ id: uid("fold"), path: "root", files: [] }],
         };
-        set((s) => ({
-          byYearTerm: {
-            ...s.byYearTerm,
-            [key]: [...(s.byYearTerm[key] || []), course],
-          },
-          selectedCourseId: id,
-        }));
+        
+        set((s) => {
+          const currentCourses = s.byYearTerm[key] || [];
+          const isFirstCourse = currentCourses.length === 0;
+          
+          const newState = {
+            byYearTerm: {
+              ...s.byYearTerm,
+              [key]: [...currentCourses, course],
+            },
+            selectedCourseId: id,
+          };
+          
+          // Trigger gamification rewards
+          if (isFirstCourse) {
+            setTimeout(() => rewardFirstCourse(), 0);
+          }
+          
+          // Check semester organizer progress
+          setTimeout(() => checkSemesterOrganizer(currentCourses.length + 1), 100);
+          
+          return newState;
+        });
+        
         return id;
       },
 
@@ -149,24 +182,70 @@ export const useCoursePlanner = create<State>()(
         })),
 
       addTask: (key, courseId, task) =>
-        set((s) => ({
-          byYearTerm: {
-            ...s.byYearTerm,
-            [key]: (s.byYearTerm[key] || []).map((c) =>
-              c.id !== courseId ? c : { ...c, tasks: [...c.tasks, task] }
-            ),
-          },
-        })),
+        set((s) => {
+          const newState = {
+            byYearTerm: {
+              ...s.byYearTerm,
+              [key]: (s.byYearTerm[key] || []).map((c) =>
+                c.id !== courseId ? c : { ...c, tasks: [...c.tasks, task] }
+              ),
+            },
+          };
+          
+          // Count total assignments with grades across all courses
+          setTimeout(() => {
+            const allCourses = Object.values(s.byYearTerm).flat();
+            const totalGradedAssignments = allCourses.reduce((count, course) => 
+              count + course.tasks.filter(t => t.grade !== undefined).length, 0
+            );
+            checkGradeWarrior(totalGradedAssignments);
+          }, 0);
+          
+          return newState;
+        }),
 
       updateTask: (key, courseId, task) =>
-        set((s) => ({
-          byYearTerm: {
-            ...s.byYearTerm,
-            [key]: (s.byYearTerm[key] || []).map((c) =>
-              c.id !== courseId ? c : { ...c, tasks: c.tasks.map((t) => (t.id === task.id ? task : t)) }
-            ),
-          },
-        })),
+        set((s) => {
+          const course = (s.byYearTerm[key] || []).find(c => c.id === courseId);
+          const oldTask = course?.tasks.find(t => t.id === task.id);
+          
+          const newState = {
+            byYearTerm: {
+              ...s.byYearTerm,
+              [key]: (s.byYearTerm[key] || []).map((c) =>
+                c.id !== courseId ? c : { ...c, tasks: c.tasks.map((t) => (t.id === task.id ? task : t)) }
+              ),
+            },
+          };
+          
+          // Check if a grade was added
+          if (task.grade !== undefined && oldTask?.grade === undefined) {
+            setTimeout(() => rewardGradeEntry(), 0);
+          }
+          
+          // Count total assignments with grades and check for badges
+          setTimeout(() => {
+            const allCourses = Object.values(s.byYearTerm).flat();
+            const totalGradedAssignments = allCourses.reduce((count, course) => 
+              count + course.tasks.filter(t => t.grade !== undefined).length, 0
+            );
+            checkGradeWarrior(totalGradedAssignments);
+            
+            // Calculate GPA and check GPA badges
+            const gradedTasks = allCourses.flatMap(course => 
+              course.tasks.filter(t => t.grade !== undefined)
+            );
+            
+            if (gradedTasks.length > 0) {
+              const averageGrade = gradedTasks.reduce((sum, task) => sum + (task.grade || 0), 0) / gradedTasks.length;
+              // Convert percentage to 4.0 scale (rough approximation)
+              const gpa = (averageGrade / 100) * 4.0;
+              checkGPABadges(gpa);
+            }
+          }, 100);
+          
+          return newState;
+        }),
 
       removeTask: (key, courseId, taskId) =>
         set((s) => ({
@@ -177,6 +256,29 @@ export const useCoursePlanner = create<State>()(
             ),
           },
         })),
+
+      // Weekly attendance management
+      updateWeeklyAttendance: (key, courseId, weekKey, dayIndex, attended) =>
+        set((s) => ({
+          byYearTerm: {
+            ...s.byYearTerm,
+            [key]: (s.byYearTerm[key] || []).map((c) =>
+              c.id !== courseId ? c : {
+                ...c,
+                weeklyAttendance: {
+                  ...(c.weeklyAttendance || {}),
+                  [weekKey]: (c.weeklyAttendance?.[weekKey] || Array.from({ length: 7 }, () => false))
+                    .map((day, index) => index === dayIndex ? attended : day)
+                }
+              }
+            ),
+          },
+        })),
+
+      getWeeklyAttendance: (key, courseId, weekKey) => {
+        const course = get().byYearTerm[key]?.find(c => c.id === courseId);
+        return course?.weeklyAttendance?.[weekKey] || Array.from({ length: 7 }, () => false);
+      },
 
       ensureFolder: (key, courseId, path) =>
         set((s) => ({
