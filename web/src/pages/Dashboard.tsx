@@ -32,6 +32,7 @@ import {
   XCircle,
   AlertCircle,
   CalendarCheck,
+  Mail,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1679,13 +1680,19 @@ export default function AcademicQuestDashboard() {
               <Button 
                 variant="outline" 
                 className="rounded-2xl border-2 bg-gradient-to-r from-white/95 to-white/85 dark:from-neutral-800/90 dark:to-neutral-900/80 
-                         backdrop-blur-md hover:from-cyan-50/90 hover:to-sky-50/80 dark:hover:from-cyan-950/40 dark:hover:to-sky-950/30 
-                         border-neutral-200/60 dark:border-neutral-600/40 hover:border-cyan-200/60 dark:hover:border-sky-400/30
+                         backdrop-blur-md hover:from-blue-50/90 hover:to-indigo-50/80 dark:hover:from-blue-950/40 dark:hover:to-indigo-950/30 
+                         border-neutral-200/60 dark:border-neutral-600/40 hover:border-blue-200/60 dark:hover:border-indigo-400/30
                          shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95
-                         text-neutral-700 dark:text-neutral-200 hover:text-cyan-700 dark:hover:text-sky-300
+                         text-neutral-700 dark:text-neutral-200 hover:text-blue-700 dark:hover:text-indigo-300
                          font-medium tracking-wide"
+                onClick={() => {
+                  const subject = encodeURIComponent('AcademicQuest Feedback');
+                  const body = encodeURIComponent('Hi! I would like to share feedback about AcademicQuest:\n\n[Please describe your experience, suggestions, or any errors encountered]\n\nThank you!');
+                  window.open(`mailto:renkai.studios0@gmail.com?subject=${subject}&body=${body}`, '_blank');
+                }}
               >
-                <span>Import Syllabus</span>
+                <Mail className="w-4 h-4 mr-2" />
+                <span>Send Feedback</span>
               </Button>
               <Button 
                 className="rounded-2xl bg-gradient-to-r from-green-600/90 to-emerald-600/90 dark:from-green-500/90 dark:to-emerald-500/90

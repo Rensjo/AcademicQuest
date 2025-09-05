@@ -490,7 +490,7 @@ export function GamificationPanel({ isOpen, onClose, defaultTab = 'status' }: Ga
                         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
                           <Star className="w-6 h-6 text-white" />
                         </div>
-                        <p className="text-3xl font-bold text-purple-700 dark:text-purple-300 mb-1">{stats.studyHours}h</p>
+                        <p className="text-3xl font-bold text-purple-700 dark:text-purple-300 mb-1">{stats.studyHours % 1 === 0 ? stats.studyHours : stats.studyHours.toFixed(1)}h</p>
                         <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Study Hours</p>
                       </div>
                     </CardContent>
