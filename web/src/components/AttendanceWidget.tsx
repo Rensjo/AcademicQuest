@@ -26,7 +26,6 @@ const scrollbarStyles = `
 export const AttendanceWidget: React.FC = () => {
   const { 
     markAttendance,
-    getAttendanceStreak, 
     getLast365DaysData,
     getWeeklyAttendanceRate,
     getMonthlyAttendanceRate,
@@ -204,8 +203,8 @@ export const AttendanceWidget: React.FC = () => {
     return 'bg-red-300 dark:bg-red-400'
   }
 
-  // Statistics
-  const currentStreak = getAttendanceStreak()
+  // Statistics - Use effective streak from gamification system
+  const currentStreak = gamification.getEffectiveAttendanceStreak()
   const weeklyRate = getWeeklyAttendanceRate()
   const monthlyRate = getMonthlyAttendanceRate()
   const semesterRate = getSemesterAttendanceRate()
@@ -324,15 +323,15 @@ export const AttendanceWidget: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <span>Less</span>
+                <span>Absent</span>
                 <div className="flex gap-1">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-neutral-100 dark:bg-neutral-800"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-300 dark:bg-green-300"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-400 dark:bg-green-400"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-500 dark:bg-green-500"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-600 dark:bg-green-600"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-neutral-100 dark:bg-neutral-800" title="No classes"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-red-300 dark:bg-red-400" title="Poor attendance"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-yellow-300 dark:bg-yellow-400" title="Moderate attendance"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-green-400 dark:bg-green-400" title="Good attendance"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-green-600 dark:bg-green-500" title="Excellent attendance"></div>
                 </div>
-                <span>More</span>
+                <span>Present</span>
               </div>
             </div>
             

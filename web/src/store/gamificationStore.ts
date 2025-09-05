@@ -53,6 +53,14 @@ export interface UserStats {
   badges: Badge[]
   dailyQuests: DailyQuest[]
   lastActiveDate: string
+  // Streak freeze system
+  streakFreezeActive: boolean
+  streakFreezeStartDate: string | null
+  streakFreezeEndDate: string | null
+  streakFreezeReason: string | null
+  frozenStreakDays: number
+  attendanceStreakFreezeActive: boolean
+  frozenAttendanceStreak: number
 }
 
 interface GamificationState {
@@ -66,6 +74,15 @@ interface GamificationState {
   checkAchievements: () => void
   resetStreak: () => void
   incrementStreak: () => void
+  // Streak freeze methods
+  activateStreakFreeze: (reason: string, startDate?: string, endDate?: string) => void
+  deactivateStreakFreeze: () => void
+  activateAttendanceStreakFreeze: () => void
+  deactivateAttendanceStreakFreeze: () => void
+  isStreakFrozen: () => boolean
+  isAttendanceStreakFrozen: () => boolean
+  getEffectiveStreak: () => number
+  getEffectiveAttendanceStreak: () => number
 }
 
 const INITIAL_BADGES: Badge[] = [
@@ -361,7 +378,7 @@ const INITIAL_BADGES: Badge[] = [
   }
 ]
 
-const XP_PER_LEVEL = 500
+export const XP_PER_LEVEL = 500
 const calculateLevelFromXP = (xp: number): number => Math.floor(xp / XP_PER_LEVEL) + 1
 const calculateNextLevelXP = (level: number): number => level * XP_PER_LEVEL
 
@@ -398,7 +415,7 @@ const migrateBadges = (existingBadges: Badge[]): Badge[] => {
 
 export const useGamification = create<GamificationState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       stats: {
         level: 1,
         xp: 0,
@@ -416,7 +433,15 @@ export const useGamification = create<GamificationState>()(
         longestAttendanceStreak: 0,
         badges: INITIAL_BADGES,
         dailyQuests: [],
-        lastActiveDate: new Date().toISOString().split('T')[0]
+        lastActiveDate: new Date().toISOString().split('T')[0],
+        // Streak freeze system
+        streakFreezeActive: false,
+        streakFreezeStartDate: null,
+        streakFreezeEndDate: null,
+        streakFreezeReason: null,
+        frozenStreakDays: 0,
+        attendanceStreakFreezeActive: false,
+        frozenAttendanceStreak: 0
       },
 
       updateStats: (updates) => set((state) => ({
@@ -724,7 +749,66 @@ export const useGamification = create<GamificationState>()(
           longestStreak: Math.max(state.stats.longestStreak, state.stats.streakDays + 1),
           lastActiveDate: new Date().toISOString().split('T')[0]
         }
-      }))
+      })),
+
+      // Streak freeze methods
+      activateStreakFreeze: (reason: string, startDate?: string, endDate?: string) => set((state) => ({
+        stats: {
+          ...state.stats,
+          streakFreezeActive: true,
+          streakFreezeStartDate: startDate || new Date().toISOString().split('T')[0],
+          streakFreezeEndDate: endDate || null,
+          streakFreezeReason: reason,
+          frozenStreakDays: state.stats.streakDays
+        }
+      })),
+
+      deactivateStreakFreeze: () => set((state) => ({
+        stats: {
+          ...state.stats,
+          streakFreezeActive: false,
+          streakFreezeStartDate: null,
+          streakFreezeEndDate: null,
+          streakFreezeReason: null,
+          frozenStreakDays: 0
+        }
+      })),
+
+      activateAttendanceStreakFreeze: () => set((state) => ({
+        stats: {
+          ...state.stats,
+          attendanceStreakFreezeActive: true,
+          frozenAttendanceStreak: state.stats.attendanceStreak
+        }
+      })),
+
+      deactivateAttendanceStreakFreeze: () => set((state) => ({
+        stats: {
+          ...state.stats,
+          attendanceStreakFreezeActive: false,
+          frozenAttendanceStreak: 0
+        }
+      })),
+
+      isStreakFrozen: () => {
+        const state = get()
+        return state.stats.streakFreezeActive
+      },
+
+      isAttendanceStreakFrozen: () => {
+        const state = get()
+        return state.stats.attendanceStreakFreezeActive
+      },
+
+      getEffectiveStreak: () => {
+        const state = get()
+        return state.stats.streakFreezeActive ? state.stats.frozenStreakDays : state.stats.streakDays
+      },
+
+      getEffectiveAttendanceStreak: () => {
+        const state = get()
+        return state.stats.attendanceStreakFreezeActive ? state.stats.frozenAttendanceStreak : state.stats.attendanceStreak
+      }
     }),
     {
       name: 'aq:gamification',

@@ -61,7 +61,7 @@ import {
 import { StudyHoursPanel } from "@/components/StudyHoursPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
 import { AttendanceWidget } from "@/components/AttendanceWidget";
-import { useGamification } from "@/store/gamificationStore";
+import { useGamification, XP_PER_LEVEL } from "@/store/gamificationStore";
 
 // Academic Quest — Interactive Dashboard Landing Page
 // Bright, customizable, gamified, with animations.
@@ -777,7 +777,7 @@ export default function AcademicQuestDashboard() {
           }).format(new Date()),
       []
       );
-      const xpPct = Math.min(100, Math.round(((gamification.stats.xp % 500) / 500) * 100));
+      const xpPct = Math.min(100, Math.round(((gamification.stats.totalXp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100));
 
       // Get scrollbar class based on theme
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -886,17 +886,65 @@ export default function AcademicQuestDashboard() {
                       </div>
                   </div>
                   <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Adventurer Status</p>
-                  <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60">
+                  <div className="relative w-full h-3 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mb-2">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${xpPct}%` }}
-                      transition={{ duration: 0.8 }}
-                      className="h-full"
-                      style={{ background: COLORS[0] }}
+                      animate={{ 
+                        width: `${xpPct}%`,
+                        boxShadow: xpPct >= 80 ? [
+                          `0 0 10px ${COLORS[0]}40`,
+                          `0 0 20px ${COLORS[0]}60`, 
+                          `0 0 10px ${COLORS[0]}40`
+                        ] : `0 0 10px ${COLORS[0]}40`
+                      }}
+                      transition={{ 
+                        duration: 1.2, 
+                        ease: "easeOut",
+                        delay: 0.2,
+                        boxShadow: {
+                          duration: 2,
+                          repeat: xpPct >= 80 ? Infinity : 0,
+                          repeatType: "reverse"
+                        }
+                      }}
+                      className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r"
+                      style={{ 
+                        background: `linear-gradient(90deg, ${COLORS[0]}, ${COLORS[1]})`
+                      }}
                     />
+                    {/* Shine effect - more frequent when close to level up */}
+                    <motion.div
+                      initial={{ x: "-100%" }}
+                      animate={{ x: "200%" }}
+                      transition={{
+                        duration: 2,
+                        delay: 1.5,
+                        repeat: Infinity,
+                        repeatDelay: xpPct >= 80 ? 2 : 4
+                      }}
+                      className="absolute top-0 left-0 h-full w-6 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                      style={{ filter: "blur(1px)" }}
+                    />
+                    {/* Level up indicator when very close */}
+                    {xpPct >= 90 && (
+                      <motion.div
+                        animate={{ 
+                          scale: [1, 1.1, 1],
+                          opacity: [0.6, 1, 0.6]
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center text-xs"
+                      >
+                        ⚡
+                      </motion.div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between mt-2 text-sm text-neutral-600">
-                      <span>{gamification.stats.xp % 500} / 500 XP</span>
+                  <div className="flex items-center justify-between text-sm text-neutral-600">
+                      <span>{gamification.stats.totalXp % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</span>
                       <span>🔥 Streak: {gamification.stats.streakDays}d</span>
                   </div>
                   <div className="mt-3 flex gap-2">

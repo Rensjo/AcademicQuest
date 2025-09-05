@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts'
 import { useStudySessions, minutesByDay } from '@/store/studySessionsStore'
+import { useGamification } from '@/store/gamificationStore'
 
 interface StudyHoursPanelProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ const COLORS = [
 
 export function StudyHoursPanel({ isOpen, onClose }: StudyHoursPanelProps) {
   const { sessions } = useStudySessions()
+  const { getEffectiveStreak } = useGamification()
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'term'>('week')
 
   // Calculate date ranges for different periods
@@ -85,16 +87,15 @@ export function StudyHoursPanel({ isOpen, onClose }: StudyHoursPanelProps) {
         day: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })
       }))
     
-    // Study streaks
+    // Study streaks - use effective streak from gamification system
+    const currentStreak = getEffectiveStreak()
     const sortedDays = dailyData.sort((a, b) => a.date.localeCompare(b.date))
-    let currentStreak = 0
     let maxStreak = 0
     let tempStreak = 0
     
     for (let i = sortedDays.length - 1; i >= 0; i--) {
       if (sortedDays[i].hours > 0) {
         tempStreak++
-        if (i === sortedDays.length - 1) currentStreak = tempStreak
       } else {
         maxStreak = Math.max(maxStreak, tempStreak)
         tempStreak = 0
@@ -123,7 +124,7 @@ export function StudyHoursPanel({ isOpen, onClose }: StudyHoursPanelProps) {
       currentStreak,
       maxStreak
     }
-  }, [periodSessions, dateRanges, selectedPeriod])
+  }, [periodSessions, dateRanges, selectedPeriod, getEffectiveStreak])
 
   // Study patterns analysis
   const patterns = useMemo(() => {

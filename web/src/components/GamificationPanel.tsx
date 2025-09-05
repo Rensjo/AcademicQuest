@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Star, Trophy, Target, Calendar, Award, Zap, Crown, TestTube } from 'lucide-react'
+import { X, Star, Trophy, Target, Calendar, Award, Zap, Crown, Snowflake } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGamification } from '@/store/gamificationStore'
-import { useNotifications, createLevelUpNotification, createBadgeNotification, createTaskCompletedNotification, createQuestCompletedNotification } from '@/store/notificationStore'
+import { StreakFreezePanel } from './StreakFreezePanel'
 
 interface GamificationPanelProps {
   isOpen: boolean
@@ -15,29 +15,8 @@ interface GamificationPanelProps {
 }
 
 export function GamificationPanel({ isOpen, onClose, defaultTab = 'status' }: GamificationPanelProps) {
-  const { stats, generateDailyQuests, checkAchievements, addXP, unlockBadge } = useGamification()
-  const { addNotification } = useNotifications()
-
-  // Test function for notifications (dev only)
-  const testNotifications = () => {
-    // Test level up
-    addNotification(createLevelUpNotification(stats.level + 1, 50))
-    
-    // Test badge earned
-    setTimeout(() => {
-      addNotification(createBadgeNotification("Study Warrior", "⚔️", "study_warrior"))
-    }, 1000)
-    
-    // Test task completed
-    setTimeout(() => {
-      addNotification(createTaskCompletedNotification(25, false))
-    }, 2000)
-    
-    // Test quest completed
-    setTimeout(() => {
-      addNotification(createQuestCompletedNotification("Complete 3 tasks", 30))
-    }, 3000)
-  }
+  const { stats, generateDailyQuests, checkAchievements } = useGamification()
+  const [streakFreezeOpen, setStreakFreezeOpen] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -121,11 +100,11 @@ export function GamificationPanel({ isOpen, onClose, defaultTab = 'status' }: Ga
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={testNotifications}
-                className="rounded-xl border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+                onClick={() => setStreakFreezeOpen(true)}
+                className="rounded-xl border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
               >
-                <TestTube className="w-4 h-4 mr-2" />
-                Test Notifications
+                <Snowflake className="w-4 h-4 mr-2" />
+                Streak Freeze
               </Button>
               <Button 
                 variant="outline" 
@@ -573,6 +552,12 @@ export function GamificationPanel({ isOpen, onClose, defaultTab = 'status' }: Ga
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Streak Freeze Panel */}
+      <StreakFreezePanel 
+        isOpen={streakFreezeOpen} 
+        onClose={() => setStreakFreezeOpen(false)} 
+      />
     </AnimatePresence>
   )
 }
