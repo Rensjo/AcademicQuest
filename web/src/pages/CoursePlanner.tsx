@@ -9,13 +9,15 @@ import { useCoursePlanner } from "@/store/coursePlannerStore";
 import { useSchedule } from "@/store/scheduleStore";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, AQTask, TaskStatus } from "@/store/tasksStore";
-import RichTextEditor, { RichTextEditorHandle } from "@/components/RichTextEditor";
+const RichTextEditor = React.lazy(() => import("@/components/RichTextEditor"));
+import type { RichTextEditorHandle } from "@/components/RichTextEditor";
 import { saveToOPFS, getOPFSFileURL } from "@/lib/opfs";
 import { Plus, CalendarDays, Save as SaveIcon, BookOpen, User, ClipboardList, Trash2 } from "lucide-react";
 // themed gradient like other pages
 import { useTheme, PALETTES } from "@/store/theme";
 import { useToast } from "@/hooks/use-toast";
 import TopTabsInline from "@/components/TopTabsInline";
+import { validateArray, safeLocalStorage, validateObject } from "@/lib/utils";
 
 // week checkbox helper
 const DAYS = ["S", "M", "T", "W", "Th", "F", "S2"] as const;
@@ -32,7 +34,7 @@ const scrollbarStyles = `
   .dark-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); }
 `;
 
-export default function CoursePlanner() {
+function CoursePlannerComponent() {
   const { toast } = useToast();
   // local gradient background (copied pattern from other pages)
   const theme = useTheme();
@@ -89,6 +91,69 @@ export default function CoursePlanner() {
   const addGlobalTask = useTasksStore((s) => s.addTask);
   const updateGlobalTask = useTasksStore((s) => s.updateTask);
   const removeGlobalTask = useTasksStore((s) => s.removeTask);
+
+  // Data validation and corruption prevention
+  React.useEffect(() => {
+    try {
+      // Validate years array structure
+      const validYears = validateArray(years, (item): item is typeof years[0] => {
+        return validateObject(item, ['id', 'label', 'terms']) &&
+               typeof item.id === 'string' &&
+               typeof item.label === 'string' &&
+               Array.isArray(item.terms)
+      })
+
+      // Validate academic years
+      const validAcademicYears = validateArray(academicYears, (item): item is typeof academicYears[0] => {
+        return validateObject(item, ['id', 'label', 'terms']) &&
+               typeof item.id === 'string' &&
+               typeof item.label === 'string' &&
+               Array.isArray(item.terms)
+      })
+
+      // Validate tasks array
+      const validTasks = validateArray(tasks, (item): item is AQTask => {
+        return validateObject(item, ['id', 'title', 'status']) &&
+               typeof item.id === 'string' &&
+               typeof item.title === 'string' &&
+               typeof item.status === 'string' &&
+               ['Not Started', 'In Progress', 'Completed'].includes(item.status as string)
+      })
+
+      // If any critical data is corrupted, show warning and attempt recovery
+      const hasCorruption = 
+        validYears.length !== years.length ||
+        validAcademicYears.length !== academicYears.length ||
+        validTasks.length !== tasks.length
+
+      if (hasCorruption) {
+        console.warn('Detected corrupted data in Course Planner, attempting recovery...')
+        toast({
+          title: "Data Validation",
+          description: "Some corrupted data was detected and cleaned up automatically.",
+          duration: 3000,
+        })
+        
+        // Clear only if corruption is severe
+        if (validYears.length === 0 && years.length > 0) {
+          console.warn('Critical corruption detected, clearing localStorage')
+          safeLocalStorage.clear()
+          window.location.reload()
+        }
+
+      }
+    } catch (error) {
+      console.error('Error validating Course Planner data:', error)
+      toast({
+        title: "Data Error",
+        description: "A data error was detected. Application will reset to prevent issues.",
+        variant: "destructive",
+        duration: 5000,
+      })
+      safeLocalStorage.clear()
+      setTimeout(() => window.location.reload(), 2000)
+    }
+  }, [years, academicYears, tasks, toast])
 
   // Enhanced Add Task dialog state
   const [addTaskOpen, setAddTaskOpen] = React.useState(false);
@@ -299,16 +364,19 @@ export default function CoursePlanner() {
   // Persist a stable link when we find a match; avoid loops by only setting when changed
   React.useEffect(() => {
     if (!course) return;
-  const slotId = classMeta.slotId;
+    const slotId = classMeta.slotId;
+    // Defensive guard: avoid repeated updates if nothing actually changes.
     if (slotId && course.linkedSlotId !== slotId) {
       updateCourse(key, { ...course, linkedSlotId: slotId });
+      return; // prevent fall-through causing additional checks this render
     }
     if (!slotId && course.linkedSlotId) {
-      // If the current course has a stale link that no longer exists in this term, clear it
       const exists = scheduleTerm?.slots.some(s => s.id === course.linkedSlotId);
-      if (!exists) updateCourse(key, { ...course, linkedSlotId: undefined });
+      if (!exists) {
+        updateCourse(key, { ...course, linkedSlotId: undefined });
+      }
     }
-  }, [classMeta, course, key, updateCourse, scheduleTerm]);
+  }, [classMeta.slotId, course?.linkedSlotId, course, key, updateCourse, scheduleTerm]);
 
   // modules UI state
   const [activeModuleId, setActiveModuleId] = React.useState<string | undefined>(course?.modules?.[0]?.id);
@@ -503,7 +571,7 @@ export default function CoursePlanner() {
                   <SelectValue placeholder="Select course" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
-                  {courses.map((c) => (
+                  {courses.filter(c => c && c.id).map((c) => (
                     <SelectItem key={c.id} value={c.id} className="cursor-pointer hover:bg-white/60 dark:hover:bg-neutral-800/60 transition-colors duration-200">
                       <span className="font-medium">{c.code || ""}</span>
                       {c.title ? <span className="opacity-70">{c.code ? " \u2014 " : ""}{c.title}</span> : null}
@@ -602,7 +670,7 @@ export default function CoursePlanner() {
                       <p className="text-xs mt-1">Click "Add Task" to get started!</p>
                     </div>
                   ) : (
-                    courseTasks.map((task) => (
+                    courseTasks.filter(task => task && task.id).map((task) => (
                       <div
                         key={task.id}
                         className="grid grid-cols-[1fr_auto_auto] gap-3 items-center p-3 rounded-xl 
@@ -670,7 +738,7 @@ export default function CoursePlanner() {
                         <SelectValue placeholder="Upload to" />
                       </SelectTrigger>
                       <SelectContent>
-                        {course?.folders.map((f) => (
+                        {course?.folders?.filter(f => f && f.id).map((f) => (
                           <SelectItem key={f.id} value={f.path}>{f.path}</SelectItem>
                         ))}
                       </SelectContent>
@@ -701,7 +769,7 @@ export default function CoursePlanner() {
 
                 {/* Folders and files list */}
                 <div className="space-y-3">
-                  {course?.folders.map((fold) => (
+                  {course?.folders?.filter(fold => fold && fold.id).map((fold) => (
                     <div key={fold.id} className="rounded-xl border border-black/10 dark:border-white/10 p-3 bg-white/70 dark:bg-neutral-900/60">
                       <div className="flex items-center justify-between mb-2">
                         {renamingId === fold.id ? (
@@ -772,7 +840,7 @@ export default function CoursePlanner() {
                               <div className="text-right">Size</div>
                               <div className="text-right">Actions</div>
                             </div>
-                            {fold.files.map((f) => (
+                            {fold.files?.filter(f => f && f.id).map((f) => (
                               <div key={f.id} className="grid grid-cols-[1fr_90px_180px] gap-2 items-center px-2 py-1 border-b border-black/5 dark:border-white/5 text-xs">
                                 <div className="truncate" title={f.name}>{f.name}</div>
                                 <div className="text-right">{(f.size / 1024).toFixed(1)} KB</div>
@@ -802,7 +870,7 @@ export default function CoursePlanner() {
                                       <SelectValue placeholder="Move to" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {course.folders.map((fd) => (
+                                      {course.folders?.filter(fd => fd && fd.id).map((fd) => (
                                         <SelectItem key={fd.id} value={fd.path}>{fd.path}</SelectItem>
                                       ))}
                                     </SelectContent>
@@ -970,7 +1038,7 @@ export default function CoursePlanner() {
                   <div className="flex flex-col gap-2 pt-1">
                     <div className="text-xs font-semibold text-muted-foreground mb-1"></div>
                     <div className="flex flex-col gap-2">
-                      {course?.modules.map((m) => (
+                      {course?.modules?.filter(m => m && m.id).map((m) => (
                         <div key={m.id} className="relative group">
                           <Button
                             type="button"
@@ -1026,12 +1094,14 @@ export default function CoursePlanner() {
                   {/* Editor area grows */}
                   <div className="flex-1 min-w-0">
                     {course && activeModuleId ? (
-                      <RichTextEditor
-                        ref={editorRef}
-                        value={course.modules.find((m) => m.id === activeModuleId)?.html || ""}
-                        onChange={(html) => updateModule(key, course.id, activeModuleId, html)}
-                        placeholder="Write your module notes here…"
-                      />
+                      <React.Suspense fallback={<div className="p-4 text-xs text-muted-foreground">Loading editor…</div>}>
+                        <RichTextEditor
+                          ref={editorRef}
+                          value={course.modules.find((m) => m.id === activeModuleId)?.html || ""}
+                          onChange={(html) => updateModule(key, course.id, activeModuleId, html)}
+                          placeholder="Write your module notes here…"
+                        />
+                      </React.Suspense>
                     ) : (
                       <div className="text-sm text-muted-foreground p-4">
                         Select a module on the left or create a new one.
@@ -1308,3 +1378,7 @@ export default function CoursePlanner() {
     </div>
     );
   }
+
+// Memoized default export (after component definition)
+const CoursePlanner = React.memo(CoursePlannerComponent);
+export default CoursePlanner;

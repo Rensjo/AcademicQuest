@@ -94,6 +94,13 @@ interface RowEditorProps {
  * - Credits accepts decimals; GPA accepts 0–4.00 values.
  */
 function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
+  // Local buffered state to debounce writes
+  const [local, setLocal] = React.useState(value);
+  React.useEffect(() => { setLocal(value); }, [value]);
+  React.useEffect(() => { // shallow compare then push after debounce
+    const handle = setTimeout(() => { if (local !== value) onChange(local); }, 150);
+    return () => clearTimeout(handle);
+  }, [local, value, onChange]);
   return (
     <div className="grid grid-cols-[30px_100px_1fr_90px_70px_70px] gap-3 items-center px-2 py-2">
       {/* Remove row */}
@@ -112,8 +119,8 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
 
       {/* Code */}
       <Input 
-        value={value.code} 
-        onChange={(e) => onChange({ ...value, code: e.target.value })} 
+        value={local.code} 
+        onChange={(e) => setLocal({ ...local, code: e.target.value })} 
         placeholder="Code"
         className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
@@ -127,16 +134,16 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
                     focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
                     transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 outline-none text-xs
                     placeholder:text-gray-400 dark:placeholder:text-gray-500"
-          value={value.name}
-          onChange={(e) => onChange({ ...value, name: e.target.value })}
+          value={local.name}
+          onChange={(e) => setLocal({ ...local, name: e.target.value })}
           placeholder="Course name"
         />
       </div>
 
       {/* Section */}
       <Input 
-        value={value.section} 
-        onChange={(e) => onChange({ ...value, section: e.target.value })} 
+        value={local.section} 
+        onChange={(e) => setLocal({ ...local, section: e.target.value })} 
         placeholder="Sec."
         className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
@@ -147,8 +154,8 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
       <Input 
         type="number" 
         step="0.5" 
-        value={value.credits} 
-        onChange={(e) => onChange({ ...value, credits: Number(e.target.value) || 0 })} 
+        value={local.credits} 
+        onChange={(e) => setLocal({ ...local, credits: Number(e.target.value) || 0 })} 
         placeholder="Cr."
         className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
@@ -161,8 +168,12 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
         step="0.01"
         min={0}
         max={4}
-        value={value.gpa ?? ""}
-        onChange={(e) => onChange({ ...value, gpa: e.target.value === "" ? undefined : Number(e.target.value) })}
+        value={local.gpa ?? ""}
+        onChange={(e) => {
+          const v = e.target.value;
+          // update local buffer immediately, commit via existing debounce effect
+          setLocal({ ...local, gpa: v === "" ? undefined : Number(v) });
+        }}
         placeholder="GPA"
         className="h-8 rounded-2xl bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
@@ -177,7 +188,7 @@ function RowEditor({ value, onChange, onRemove }: RowEditorProps) {
 // ----------------------------------
 
 /** Props for one term canvas. */
-interface TermCardProps { yearId: string; termIndex: number; }
+interface TermCardProps { yearId: string; termIndex: number; savedScroll?: number; onScrollChange?: (termId: string, scroll: number) => void; }
 
 /**
  * TermCard
@@ -185,7 +196,7 @@ interface TermCardProps { yearId: string; termIndex: number; }
  * - Shows header, column headers, editable rows, and footer with totals.
  * - Totals: credits sum + weighted GPA (by credits).
  */
-function TermCard({ yearId, termIndex }: TermCardProps) {
+function TermCard({ yearId, termIndex, savedScroll = 0, onScrollChange }: TermCardProps) {
   // Select only what we need from the store
   const years = useAcademicPlan((s) => s.years);
   const addRow = useAcademicPlan((s) => s.addRow);
@@ -196,6 +207,70 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
   const year = years.find((y) => y.id === yearId);
   const term = year?.terms?.[termIndex];
   const courses = React.useMemo(() => term?.courses ?? [], [term?.courses]);
+
+  // Virtualization (only activate when row count large enough)
+  const VIRTUALIZE_THRESHOLD = 30;
+  const shouldVirtualize = courses.length > VIRTUALIZE_THRESHOLD;
+  const BUFFER = 4;
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const measureRef = React.useRef<HTMLDivElement | null>(null);
+  const [rowHeight, setRowHeight] = React.useState(44); // fallback estimate
+  const [scrollTop, setScrollTop] = React.useState(0);
+  React.useEffect(() => {
+    if (measureRef.current) {
+      const h = measureRef.current.getBoundingClientRect().height;
+      if (h && Math.abs(h - rowHeight) > 1) setRowHeight(h);
+    }
+  }, [courses.length, rowHeight]);
+  const viewportHeight = 400; // dedicated scroller height
+  const totalRows = courses.length;
+  const startIndex = shouldVirtualize ? Math.max(0, Math.floor(scrollTop / rowHeight) - BUFFER) : 0;
+  const endIndex = shouldVirtualize ? Math.min(totalRows, Math.ceil((scrollTop + viewportHeight) / rowHeight) + BUFFER) : totalRows;
+  const visible = courses.slice(startIndex, endIndex);
+  const offsetY = startIndex * rowHeight;
+  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const st = e.currentTarget.scrollTop;
+    setScrollTop(st);
+    if (onScrollChange && term) onScrollChange(term.id, st);
+  };
+
+  // Apply saved scroll position after mount / year switch
+  React.useEffect(() => {
+    if (containerRef.current && savedScroll > 0) {
+      containerRef.current.scrollTop = savedScroll;
+      setScrollTop(savedScroll);
+    }
+  }, [savedScroll, term?.id]);
+
+  // Keyboard navigation within virtualized list
+  const handleKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!shouldVirtualize || !['ArrowDown','ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowDown' ? 1 : -1;
+    // Determine focused row index
+    const active = document.activeElement as HTMLElement | null;
+    let currentGlobalIndex: number | null = null;
+    if (active) {
+      const rowEl = active.closest('[data-row-index]') as HTMLElement | null;
+      if (rowEl) currentGlobalIndex = Number(rowEl.dataset.rowIndex);
+    }
+    if (currentGlobalIndex == null) currentGlobalIndex = startIndex; // fallback
+    const next = Math.min(totalRows - 1, Math.max(0, currentGlobalIndex + dir));
+    const neededTop = next * rowHeight;
+    const neededBottom = neededTop + rowHeight;
+    const viewTop = scrollTop;
+    const viewBottom = scrollTop + viewportHeight;
+    if (neededTop < viewTop) {
+      containerRef.current!.scrollTop = neededTop;
+    } else if (neededBottom > viewBottom) {
+      containerRef.current!.scrollTop = neededBottom - viewportHeight;
+    }
+    // Focus first input in that row once it's rendered in current frame
+    requestAnimationFrame(() => {
+      const target = containerRef.current?.querySelector(`[data-row-index="${next}"] input, [data-row-index="${next}"] textarea`) as HTMLElement | null;
+      target?.focus();
+    });
+  };
 
   // Derived totals
   const totalCredits = React.useMemo(
@@ -224,9 +299,11 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
 
   if (!year || !term) return null;
 
+  // (Removed duplicate virtualization declarations moved earlier)
+
   return (
     <Card className="border-0 shadow-xl rounded-3xl overflow-hidden bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl 
-                    ring-1 ring-gray-200/50 dark:ring-gray-600/50 min-w-[900px] hover:shadow-2xl transition-all duration-200">
+                    ring-1 ring-gray-200/50 dark:ring-gray-600/50 min-w-[900px] hover:shadow-2xl transition-all duration-200 cv-auto">
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-end justify-between mb-4">
@@ -254,15 +331,50 @@ function TermCard({ yearId, termIndex }: TermCardProps) {
           <div></div><div>Code</div><div>Course Name</div><div>Sec.</div><div>Cr.</div><div>GPA</div>
         </div>
 
-        {/* Editable rows */}
-        <div className="divide-y divide-gray-100/60 dark:divide-gray-700/40">
-          {term.courses.map((r) => (
-            <RowEditor key={r.id} value={r} onChange={(row) => updateRow(yearId, term.id, row)} onRemove={() => removeRow(yearId, term.id, r.id)} />
-          ))}
-        </div>
+        {/* Rows (virtualized if large) */}
+        {shouldVirtualize ? (
+          <div className="relative rounded-xl border border-transparent" style={{ height: viewportHeight }}>
+            <div
+              ref={containerRef}
+              onScroll={onScroll}
+              onKeyDown={handleKey}
+              tabIndex={0}
+              className="absolute inset-0 overflow-auto cv-auto outline-none focus:ring-1 focus:ring-blue-400/40"
+              style={{ willChange: 'transform' }}
+            >
+              <div style={{ height: totalRows * rowHeight }} className="relative">
+                <div style={{ transform: `translateY(${offsetY}px)` }} className="absolute inset-x-0 top-0 divide-y divide-gray-100/60 dark:divide-gray-700/40">
+                  {Array.from({ length: visible.length }).map((_, slotIndex) => {
+                    const r = visible[slotIndex];
+                    const globalIndex = startIndex + slotIndex;
+                    return (
+                      <div
+                        key={`slot-${slotIndex}`}
+                        data-row-index={globalIndex}
+                        ref={slotIndex === 0 ? measureRef : undefined}
+                        className="focus-within:bg-blue-50/40 dark:focus-within:bg-blue-900/20 transition-colors"
+                      >
+                        <RowEditor value={r} onChange={(row) => updateRow(yearId, term.id, row)} onRemove={() => removeRow(yearId, term.id, r.id)} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 text-[10px] text-gray-500 dark:text-gray-400 text-right pr-1">Virtualized {visible.length}/{totalRows} rows</div>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100/60 dark:divide-gray-700/40 cv-auto">
+            {courses.map(r => (
+              <div key={r.id} data-row-index={courses.findIndex(c=>c.id===r.id)}>
+                <RowEditor value={r} onChange={(row) => updateRow(yearId, term.id, row)} onRemove={() => removeRow(yearId, term.id, r.id)} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Footer totals */}
-        <div className="flex items-center justify-end pt-4 border-t border-gray-200/60 dark:border-gray-600/40 mt-4 gap-6">
+  <div className="flex items-center justify-end pt-4 border-t border-gray-200/60 dark:border-gray-600/40 mt-4 gap-6">
           <div className="text-xs">
             <span className="text-gray-500 dark:text-gray-400 mr-2">Total Credits</span>
             <span className="font-semibold text-gray-800 dark:text-gray-100 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">{totalCredits}</span>
@@ -351,6 +463,12 @@ export default function AcademicPlanner() {
 
   // School year chooser dialog
   const [yearOpen, setYearOpen] = React.useState(false);
+
+  // Scroll position persistence per term (termId -> scrollTop)
+  const [termScroll, setTermScroll] = React.useState<Record<string, number>>({});
+  const handleTermScrollChange = React.useCallback((termId: string, scroll: number) => {
+    setTermScroll(prev => (prev[termId] === scroll ? prev : { ...prev, [termId]: scroll }));
+  }, []);
 
   return (
     <div className="min-h-screen w-full" style={gradientStyle}>
@@ -447,7 +565,7 @@ export default function AcademicPlanner() {
                 {/* Scrollable Terms */}
                 <div className={`overflow-x-auto flex-1 ${scrollCls}`}>
                   <div className="flex gap-6 items-start min-w-max">
-                    {y.terms.map((_, idx) => (
+                    {y.terms.map((t, idx) => (
                       <div
                         key={idx}
                         ref={(el) => {
@@ -459,7 +577,12 @@ export default function AcademicPlanner() {
                           }
                         }}
                       >
-                        <TermCard yearId={y.id} termIndex={idx} />
+                        <TermCard
+                          yearId={y.id}
+                          termIndex={idx}
+                          savedScroll={t.id ? termScroll[t.id] : 0}
+                          onScrollChange={handleTermScrollChange}
+                        />
                       </div>
                     ))}
                   </div>

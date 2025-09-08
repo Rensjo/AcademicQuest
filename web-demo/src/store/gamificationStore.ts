@@ -362,7 +362,7 @@ const INITIAL_BADGES: Badge[] = [
   }
 ]
 
-const XP_PER_LEVEL = 500
+export const XP_PER_LEVEL = 500
 const calculateLevelFromXP = (xp: number): number => Math.floor(xp / XP_PER_LEVEL) + 1
 const calculateNextLevelXP = (level: number): number => level * XP_PER_LEVEL
 

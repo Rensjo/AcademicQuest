@@ -1,4 +1,6 @@
 // Sound Service for Academic Quest
+import { getDesktopOptimizations, isDesktopApp } from '@/lib/desktop-optimizations'
+
 export type SoundType = 'hover' | 'click' | 'taskComplete' | 'levelUp' | 'badgeEarned'
 
 interface SoundConfig {
@@ -24,10 +26,12 @@ class SoundService {
   private hasUserInteracted: boolean = false
   private backgroundMusicCooldown: boolean = false
   private backgroundMusicTimeout: NodeJS.Timeout | null = null
+  private playTimeouts: Map<SoundType, NodeJS.Timeout> = new Map() // For throttling
+  private lastPlayTime: Map<SoundType, number> = new Map() // For throttling
 
   // Background music configuration
   private backgroundMusicConfig: BackgroundMusicConfig = {
-    src: '/sounds/Golden-Hour-background-sound.mp3',
+    src: './sounds/Golden-Hour-background-sound.mp3',
     volume: 0.25, // Lower volume to not be distracting
     loop: false // We'll handle replay manually with cooldown
   }
@@ -35,27 +39,27 @@ class SoundService {
   // Sound configuration
   private soundConfigs: Record<SoundType, SoundConfig> = {
     hover: {
-      src: '/sounds/hover-button-sound.mp3',
+      src: './sounds/hover-button-sound.mp3',
       volume: 0.3,
       preload: true
     },
     click: {
-      src: '/sounds/single-mouse-button-click-351381.mp3',
+      src: './sounds/single-mouse-button-click-351381.mp3',
       volume: 0.5,
       preload: true
     },
     taskComplete: {
-      src: '/sounds/task-complete-sound.mp3',
+      src: './sounds/task-complete-sound.mp3',
       volume: 0.8,
       preload: true
     },
     levelUp: {
-      src: '/sounds/level-up-sound.mp3',
+      src: './sounds/level-up-sound.mp3',
       volume: 0.9,
       preload: true
     },
     badgeEarned: {
-      src: '/sounds/badge-sound.mp3',
+      src: './sounds/badge-sound.mp3',
       volume: 0.8,
       preload: true
     }
@@ -89,7 +93,23 @@ class SoundService {
   private initializeSounds() {
     Object.entries(this.soundConfigs).forEach(([soundType, config]) => {
       try {
-        const audio = new Audio(config.src)
+        // Try to get preloaded audio from desktop optimizations
+        const desktopOpts = getDesktopOptimizations()
+        let audio: HTMLAudioElement
+        
+        if (isDesktopApp() && desktopOpts) {
+          const preloaded = desktopOpts.getPreloadedAudio(config.src)
+          if (preloaded) {
+            audio = preloaded.cloneNode() as HTMLAudioElement
+            console.log(`🎵 Using preloaded audio for ${soundType}`)
+          } else {
+            audio = new Audio(config.src)
+            console.log(`🎵 Creating new audio for ${soundType} (not preloaded)`)
+          }
+        } else {
+          audio = new Audio(config.src)
+        }
+        
         audio.volume = config.volume * this.masterVolume
         audio.preload = config.preload ? 'auto' : 'none'
         
@@ -375,11 +395,26 @@ class SoundService {
   // Public methods
   play(soundType: SoundType, options?: { volume?: number; delay?: number }) {
     const enabled = this.isEnabled()
-    console.log(`🔊 Attempting to play sound: ${soundType}, enabled: ${enabled}`)
     
     if (!enabled) {
-      console.log(`🔇 Sound disabled, skipping ${soundType}`)
       return
+    }
+
+    // Throttle rapid successive calls to prevent audio spam
+    const now = Date.now()
+    const lastPlay = this.lastPlayTime.get(soundType) || 0
+    const minInterval = soundType === 'hover' ? 100 : 50 // 100ms for hover, 50ms for others
+    
+    if (now - lastPlay < minInterval) {
+      return // Skip if too soon since last play
+    }
+    
+    this.lastPlayTime.set(soundType, now)
+
+    // Clear any existing timeout for this sound type
+    const existingTimeout = this.playTimeouts.get(soundType)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
     }
 
     const playSound = () => {
@@ -390,35 +425,39 @@ class SoundService {
       }
 
       try {
-        // Reset audio to beginning in case it's already playing
-        audio.currentTime = 0
+        // Prevent overlapping plays of the same sound
+        if (!audio.paused) {
+          audio.currentTime = 0
+        }
         
         // Apply temporary volume if specified
         if (options?.volume !== undefined) {
-          audio.volume = options.volume * this.masterVolume
+          audio.volume = Math.min(1, Math.max(0, options.volume * this.masterVolume))
         }
         
-        console.log(`🎵 Playing sound: ${soundType} at volume ${audio.volume}`)
-        
-        // Play the sound
-        const playPromise = audio.play()
-        
-        // Handle promise-based play() method
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log(`✅ Successfully played sound: ${soundType}`)
+        // Use requestAnimationFrame for better performance
+        requestAnimationFrame(() => {
+          audio.currentTime = 0
+          const playPromise = audio.play()
+          
+          // Handle promise-based play() method
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              // Silently handle autoplay policy errors
+              if (!error.message.includes('user gesture')) {
+                console.warn(`Failed to play sound ${soundType}:`, error.message)
+              }
             })
-            .catch(error => {
-              console.warn(`Failed to play sound ${soundType}:`, error)
-            })
-        }
-        
+          }
+        })
+
         // Reset volume after playing if it was temporarily changed
         if (options?.volume !== undefined) {
           setTimeout(() => {
             const config = this.soundConfigs[soundType]
-            audio.volume = config.volume * this.masterVolume
+            if (config) {
+              audio.volume = config.volume * this.masterVolume
+            }
           }, 100)
         }
       } catch (error) {
@@ -427,10 +466,34 @@ class SoundService {
     }
 
     if (options?.delay) {
-      setTimeout(playSound, options.delay)
+      const timeout = setTimeout(playSound, options.delay)
+      this.playTimeouts.set(soundType, timeout)
     } else {
       playSound()
     }
+  }
+
+  // Cleanup method for memory management
+  cleanup() {
+    // Stop and cleanup audio elements
+    this.sounds.forEach(audio => {
+      audio.pause()
+      audio.src = ''
+    })
+    
+    if (this.backgroundMusic) {
+      this.backgroundMusic.pause()
+      this.backgroundMusic.src = ''
+    }
+    
+    // Clear timeouts
+    if (this.backgroundMusicTimeout) {
+      clearTimeout(this.backgroundMusicTimeout)
+    }
+
+    this.playTimeouts.forEach(timeout => clearTimeout(timeout))
+    this.playTimeouts.clear()
+    this.lastPlayTime.clear()
   }
 
   // Settings methods

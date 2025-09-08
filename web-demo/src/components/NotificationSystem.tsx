@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Star, Trophy, Target, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useNotifications, GameNotification } from '@/store/notificationStore'
+import { soundService } from '@/services/soundService'
 
 interface NotificationPopupProps {
   notification: GameNotification
@@ -11,6 +12,21 @@ interface NotificationPopupProps {
 }
 
 function NotificationPopup({ notification, onClose }: NotificationPopupProps) {
+  // Play sound effect when notification appears
+  useEffect(() => {
+    const soundMap = {
+      'level_up': 'levelUp',
+      'badge_earned': 'badgeEarned', 
+      'task_completed': 'taskComplete',
+      'quest_completed': 'taskComplete',
+    } as const;
+    
+    const soundKey = soundMap[notification.type as keyof typeof soundMap];
+    if (soundKey) {
+      soundService.play(soundKey);
+    }
+  }, [notification.type]);
+
   const getIcon = () => {
     if (notification.icon) return notification.icon
     

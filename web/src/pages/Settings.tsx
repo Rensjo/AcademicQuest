@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TopTabsInline from '@/components/TopTabsInline'
 import useThemedGradient from '@/hooks/useThemedGradient'
+import { useDesktopIntegration } from '@/hooks/useDesktopIntegration'
 import { Trophy, Zap, RotateCcw, Trash2, Download, Upload, Settings as SettingsIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,18 @@ export default function Settings() {
 	const theme = useTheme()
 	const settings = useSettings()
 	const gamification = useGamification()
+	const desktop = useDesktopIntegration()
 	const [gamificationPanelOpen, setGamificationPanelOpen] = useState(false)
+	const [appInfo, setAppInfo] = useState<{version?: string; platform?: string; electronVersion?: string} | null>(null)
+
+	// Load app info when component mounts
+	useEffect(() => {
+		if (desktop.isDesktop) {
+			desktop.getAppInfo().then(info => {
+				setAppInfo(info as {version?: string; platform?: string; electronVersion?: string});
+			});
+		}
+	}, [desktop]);
 
 	function scrollTo(id: string) {
 		const el = document.getElementById(id)
@@ -49,26 +61,38 @@ export default function Settings() {
 			textbooks: localStorage.getItem('aq:textbooks'),
 			studySessions: localStorage.getItem('aq:study-sessions'),
 			gamification: localStorage.getItem('aq:gamification'),
+			attendance: localStorage.getItem('aq:attendance'),
+			coursePlanner: localStorage.getItem('aq:course-planner'),
+			exportDate: new Date().toISOString(),
+			version: appInfo?.version || '1.0.0'
 		}
-		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-		const url = URL.createObjectURL(blob)
-		const a = document.createElement('a')
-		a.href = url
-		a.download = 'academicquest-backup.json'
-		a.click()
-		URL.revokeObjectURL(url)
+
+		if (desktop.isDesktop) {
+			// Use native file save dialog
+			const result = await desktop.exportData(payload);
+			if (result.success) {
+				alert(`Data exported successfully to: ${result.path}`);
+			} else {
+				alert(`Export failed: ${result.error}`);
+			}
+		} else {
+			// Fallback to web download
+			const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+			const url = URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			a.download = `academicquest-backup-${new Date().toISOString().split('T')[0]}.json`
+			a.click()
+			URL.revokeObjectURL(url)
+		}
 	}
 
 	async function importData() {
-		const input = document.createElement('input')
-		input.type = 'file'
-		input.accept = 'application/json'
-		input.onchange = async () => {
-			const f = input.files?.[0]
-			if (!f) return
-			const text = await f.text()
-			try {
-				const obj = JSON.parse(text)
+		if (desktop.isDesktop) {
+			// Use native file open dialog
+			const result = await desktop.importData();
+			if (result.success && result.data) {
+				const obj = result.data as Record<string, string>;
 				if (obj.settings) localStorage.setItem('aq:settings', obj.settings)
 				if (obj.theme) localStorage.setItem('aq:theme', obj.theme)
 				if (obj.plan) localStorage.setItem('aq:academic-plan', obj.plan)
@@ -78,12 +102,43 @@ export default function Settings() {
 				if (obj.textbooks) localStorage.setItem('aq:textbooks', obj.textbooks)
 				if (obj.studySessions) localStorage.setItem('aq:study-sessions', obj.studySessions)
 				if (obj.gamification) localStorage.setItem('aq:gamification', obj.gamification)
+				if (obj.attendance) localStorage.setItem('aq:attendance', obj.attendance)
+				if (obj.coursePlanner) localStorage.setItem('aq:course-planner', obj.coursePlanner)
+				alert('Data imported successfully! The page will now reload.');
 				window.location.reload()
-			} catch {
-				alert('Invalid backup file')
+			} else if (result.error) {
+				alert(`Import failed: ${result.error}`);
 			}
+		} else {
+			// Fallback to web file input
+			const input = document.createElement('input')
+			input.type = 'file'
+			input.accept = 'application/json'
+			input.onchange = async () => {
+				const f = input.files?.[0]
+				if (!f) return
+				const text = await f.text()
+				try {
+					const obj = JSON.parse(text)
+					if (obj.settings) localStorage.setItem('aq:settings', obj.settings)
+					if (obj.theme) localStorage.setItem('aq:theme', obj.theme)
+					if (obj.plan) localStorage.setItem('aq:academic-plan', obj.plan)
+					if (obj.schedule) localStorage.setItem('aq:schedule', obj.schedule)
+					if (obj.tasks) localStorage.setItem('aq:tasks', obj.tasks)
+					if (obj.scholarships) localStorage.setItem('aq:scholarships', obj.scholarships)
+					if (obj.textbooks) localStorage.setItem('aq:textbooks', obj.textbooks)
+					if (obj.studySessions) localStorage.setItem('aq:study-sessions', obj.studySessions)
+					if (obj.gamification) localStorage.setItem('aq:gamification', obj.gamification)
+					if (obj.attendance) localStorage.setItem('aq:attendance', obj.attendance)
+					if (obj.coursePlanner) localStorage.setItem('aq:course-planner', obj.coursePlanner)
+					alert('Data imported successfully! The page will now reload.');
+					window.location.reload()
+				} catch {
+					alert('Invalid backup file')
+				}
+			}
+			input.click()
 		}
-		input.click()
 	}
 
 	// Gamification reset functions
@@ -155,6 +210,7 @@ export default function Settings() {
 										{ id: 'nav-defaults', label: 'Navigation & Defaults', icon: '🧭' },
 										{ id: 'notifications', label: 'Notifications', icon: '🔔' },
 										{ id: 'gamification', label: 'Gamification', icon: '🏆' },
+										...(desktop.isDesktop ? [{ id: 'desktop', label: 'Desktop Features', icon: '💻' }] : []),
 										{ id: 'data', label: 'Data Management', icon: '💾' }
 									].map(({ id, label, icon }) => (
 										<Button 
@@ -310,6 +366,93 @@ export default function Settings() {
 											</div>
 											<Switch checked={settings.gradientsEnabled} onCheckedChange={(b)=>settings.set({ gradientsEnabled: b })} />
 										</div>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Performance Section */}
+							<Card id="performance" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl shadow-xl backdrop-blur-md">
+								<CardContent className="p-8">
+									<div className="flex items-center gap-3 mb-6">
+										<div className="p-2 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30">
+											<span className="text-xl">⚡</span>
+										</div>
+										<div>
+											<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Performance</h2>
+											<p className="text-sm text-neutral-600 dark:text-neutral-400">Tune rendering & effects for low-end hardware</p>
+										</div>
+									</div>
+
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+										<div className="space-y-1">
+											<label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Mode</label>
+											<Select value={settings.performanceMode} onValueChange={(v: 'auto' | 'manual')=>settings.set({ performanceMode: v })}>
+												<SelectTrigger className="h-10 rounded-2xl border-neutral-200/60 dark:border-neutral-600/40 bg-white/90 dark:bg-neutral-800/80">
+													<SelectValue placeholder="Mode" />
+												</SelectTrigger>
+												<SelectContent className="rounded-2xl border-neutral-200/60 dark:border-neutral-600/40">
+													<SelectItem value="auto">🤖 Auto Detect</SelectItem>
+													<SelectItem value="manual">🛠️ Manual</SelectItem>
+												</SelectContent>
+											</Select>
+											{settings.performanceMode === 'auto' && (
+												<button
+													onClick={() => settings.evaluateAutoPerformance?.()}
+													className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+												>
+													Re-evaluate hardware
+												</button>
+											)}
+										</div>
+
+										<div className="space-y-1">
+											<label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Visual Quality</label>
+											<Select value={settings.visualsQuality} onValueChange={(v: 'high' | 'medium' | 'low')=>settings.set({ visualsQuality: v })} disabled={settings.performanceMode==='auto'}>
+												<SelectTrigger className="h-10 rounded-2xl border-neutral-200/60 dark:border-neutral-600/40 bg-white/90 dark:bg-neutral-800/80">
+													<SelectValue placeholder="Quality" />
+												</SelectTrigger>
+												<SelectContent className="rounded-2xl border-neutral-200/60 dark:border-neutral-600/40">
+													<SelectItem value="high">🌈 High</SelectItem>
+													<SelectItem value="medium">🌓 Medium</SelectItem>
+													<SelectItem value="low">⚪ Low</SelectItem>
+												</SelectContent>
+											</Select>
+											<p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Controls gradients, shadows & blur intensity.</p>
+										</div>
+
+										<div className="space-y-1">
+											<label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Animations</label>
+											<Select value={settings.animations} onValueChange={(v: 'full' | 'reduced' | 'off')=>settings.set({ animations: v })} disabled={settings.performanceMode==='auto'}>
+												<SelectTrigger className="h-10 rounded-2xl border-neutral-200/60 dark:border-neutral-600/40 bg-white/90 dark:bg-neutral-800/80">
+													<SelectValue placeholder="Animations" />
+												</SelectTrigger>
+												<SelectContent className="rounded-2xl border-neutral-200/60 dark:border-neutral-600/40">
+													<SelectItem value="full">💫 Full</SelectItem>
+													<SelectItem value="reduced">🚪 Reduced</SelectItem>
+													<SelectItem value="off">🛑 Off</SelectItem>
+												</SelectContent>
+											</Select>
+											<p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Disables complex transitions & timing loops.</p>
+										</div>
+
+										<div className="space-y-1">
+											<label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Chart Animation</label>
+											<Select value={settings.chartAnimation} onValueChange={(v: 'normal' | 'fast' | 'off')=>settings.set({ chartAnimation: v })}>
+												<SelectTrigger className="h-10 rounded-2xl border-neutral-200/60 dark:border-neutral-600/40 bg-white/90 dark:bg-neutral-800/80">
+													<SelectValue placeholder="Charts" />
+												</SelectTrigger>
+												<SelectContent className="rounded-2xl border-neutral-200/60 dark:border-neutral-600/40">
+													<SelectItem value="normal">🎢 Normal</SelectItem>
+													<SelectItem value="fast">⚡ Fast</SelectItem>
+													<SelectItem value="off">🛑 Off</SelectItem>
+												</SelectContent>
+											</Select>
+											<p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Lower = fewer frames & CPU savings.</p>
+										</div>
+									</div>
+
+									<div className="mt-8 p-4 rounded-2xl bg-neutral-50/60 dark:bg-neutral-800/40 text-xs text-neutral-600 dark:text-neutral-400 border border-neutral-200/60 dark:border-neutral-700/50">
+										<strong className="font-semibold">Tip:</strong> Auto mode adapts based on CPU cores, RAM & reduced-motion preference. Manual overrides let advanced users squeeze more visuals or performance.
 									</div>
 								</CardContent>
 							</Card>
@@ -779,6 +922,81 @@ export default function Settings() {
 									</div>
 								</CardContent>
 							</Card>
+
+							{/* Desktop Features Section */}
+							{desktop.isDesktop && (
+								<Card id="desktop" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl shadow-xl backdrop-blur-md">
+									<CardContent className="p-8">
+										<div className="flex items-center gap-3 mb-6">
+											<div className="p-2 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30">
+												<span className="text-xl">💻</span>
+											</div>
+											<div>
+												<h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Desktop Features</h2>
+												<p className="text-sm text-neutral-600 dark:text-neutral-400">Desktop application information and features</p>
+											</div>
+										</div>
+										
+										<div className="space-y-4">
+											<div className="p-6 rounded-2xl bg-gradient-to-br from-green-50/80 to-emerald-100/60 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200/60 dark:border-green-700/60">
+												<div className="flex items-center gap-3 mb-3">
+													<div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+													<h3 className="font-medium text-green-900 dark:text-green-100">Desktop Application Active</h3>
+												</div>
+												<p className="text-sm text-green-700 dark:text-green-300 mb-4">
+													You're running AcademicQuest as a native desktop application with enhanced features and performance.
+												</p>
+												
+												{appInfo && (
+													<div className="grid grid-cols-2 gap-4 text-sm">
+														<div className="p-3 rounded-xl bg-white/60 dark:bg-neutral-800/60">
+															<div className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Version</div>
+															<div className="font-medium text-neutral-900 dark:text-neutral-100">{appInfo.version}</div>
+														</div>
+														<div className="p-3 rounded-xl bg-white/60 dark:bg-neutral-800/60">
+															<div className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Platform</div>
+															<div className="font-medium text-neutral-900 dark:text-neutral-100">{appInfo.platform}</div>
+														</div>
+														<div className="p-3 rounded-xl bg-white/60 dark:bg-neutral-800/60">
+															<div className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Electron</div>
+															<div className="font-medium text-neutral-900 dark:text-neutral-100">{appInfo.electronVersion}</div>
+														</div>
+														<div className="p-3 rounded-xl bg-white/60 dark:bg-neutral-800/60">
+															<div className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Node.js</div>
+														</div>
+													</div>
+												)}
+											</div>
+
+											<div className="p-6 rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-100/60 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-700/60">
+												<h3 className="font-medium text-blue-900 dark:text-blue-100 mb-3">Enhanced Desktop Features</h3>
+												<div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+													<div className="flex items-center gap-2">
+														<span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+														Native file dialogs for import/export
+													</div>
+													<div className="flex items-center gap-2">
+														<span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+														System notifications and alerts
+													</div>
+													<div className="flex items-center gap-2">
+														<span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+														Keyboard shortcuts and menu integration
+													</div>
+													<div className="flex items-center gap-2">
+														<span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+														Offline functionality and data persistence
+													</div>
+													<div className="flex items-center gap-2">
+														<span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+														Window state management and preferences
+													</div>
+												</div>
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+							)}
 
 							{/* Data Management Section */}
 							<Card id="data" className="border-0 bg-white/80 dark:bg-neutral-900/60 rounded-3xl shadow-xl backdrop-blur-md">

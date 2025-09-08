@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAcademicPlan } from '@/store/academicPlanStore'
 import { useStudySessions } from '@/store/studySessionsStore'
+import { useFloatingPanel } from '@/lib/floating-panel-manager'
 import { Play, Pause, X, Check, GripVertical, Timer } from 'lucide-react'
 
 type Corner = 'tl' | 'tr' | 'bl' | 'br'
@@ -58,12 +59,18 @@ function useCornerPosition() {
   }, [settings.pomodoroPosition])
   
   const style: React.CSSProperties = React.useMemo(() => {
-    const base: React.CSSProperties = { position: 'fixed', zIndex: 50 }
+    const base: React.CSSProperties = { 
+      position: 'fixed', 
+      zIndex: 50,
+      transform: 'translateZ(0)', // Force GPU acceleration
+      willChange: 'transform'
+    }
     switch (corner) {
       case 'tl': return { ...base, top: 16, left: 16 }
       case 'tr': return { ...base, top: 16, right: 16 }
       case 'bl': return { ...base, bottom: 16, left: 16 }
       case 'br': return { ...base, bottom: 16, right: 16 }
+      default: return { ...base, bottom: 16, right: 16 }
     }
   }, [corner])
   return { corner, setCorner, style }

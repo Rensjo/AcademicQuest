@@ -61,7 +61,7 @@ import {
 import { StudyHoursPanel } from "@/components/StudyHoursPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
 import { AttendanceWidget } from "@/components/AttendanceWidget";
-import { useGamification } from "@/store/gamificationStore";
+import { useGamification, XP_PER_LEVEL } from "@/store/gamificationStore";
 
 // Academic Quest — Interactive Dashboard Landing Page
 // Bright, customizable, gamified, with animations.
@@ -777,7 +777,7 @@ export default function AcademicQuestDashboard() {
           }).format(new Date()),
       []
       );
-      const xpPct = Math.min(100, Math.round(((gamification.stats.xp % 500) / 500) * 100));
+      const xpPct = Math.min(100, Math.round(((gamification.stats.xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100));
 
       // Get scrollbar class based on theme
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -886,17 +886,60 @@ export default function AcademicQuestDashboard() {
                       </div>
                   </div>
                   <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Adventurer Status</p>
-                  <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60">
+                  <div className="relative h-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 overflow-hidden">
+                    {/* Progress bar with enhanced styling */}
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${xpPct}%` }}
-                      transition={{ duration: 0.8 }}
-                      className="h-full"
-                      style={{ background: COLORS[0] }}
-                    />
+                      transition={{ 
+                        duration: 1.2, 
+                        ease: "easeInOut",
+                        delay: 0.2 
+                      }}
+                      className="absolute top-0 left-0 h-full rounded-2xl"
+                      style={{
+                        background: `linear-gradient(90deg, ${COLORS[0]}, ${COLORS[1]})`,
+                      }}
+                    >
+                      {/* Shine effect */}
+                      <motion.div
+                        className="absolute inset-0 rounded-2xl"
+                        initial={{ background: 'transparent' }}
+                        animate={{
+                          background: [
+                            'transparent',
+                            'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                            'transparent'
+                          ]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    </motion.div>
+                    
+                    {/* Level-up excitement indicator */}
+                    {xpPct > 90 && (
+                      <motion.div
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.7, 1, 0.7]
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      >
+                        ✨
+                      </motion.div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between mt-2 text-sm text-neutral-600">
-                      <span>{gamification.stats.xp % 500} / 500 XP</span>
+                      <span>{gamification.stats.xp % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</span>
                       <span>🔥 Streak: {gamification.stats.streakDays}d</span>
                   </div>
                   <div className="mt-3 flex gap-2">

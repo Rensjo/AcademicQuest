@@ -146,6 +146,48 @@ button:focus-visible {
   }
 }
 
+/* ========================= */
+/* Performance / Quality Tiers*/
+/* ========================= */
+html[data-visuals="medium"] {
+  /* Soften heavy backdrop filters & shadows */
+  --aq-blur-strength: 6px;
+  --aq-shadow-sm: 0 1px 2px -1px rgba(0,0,0,0.15),0 2px 4px -2px rgba(0,0,0,0.08);
+}
+html[data-visuals="low"] {
+  --aq-blur-strength: 0px;
+  --aq-shadow-sm: 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+/* Example utility overrides using the custom vars */
+[data-visuals="medium"] .backdrop-blur-md,
+[data-visuals="low"] .backdrop-blur-md { backdrop-filter: blur(var(--aq-blur-strength,12px)); }
+[data-visuals="low"] .backdrop-blur-sm,
+[data-visuals="low"] .backdrop-blur,
+[data-visuals="low"] .backdrop-blur-md { backdrop-filter: none !important; }
+
+/* Remove complex gradients on low */
+html[data-visuals="low"] .bg-gradient-to-r,
+html[data-visuals="low"] .bg-gradient-to-b,
+html[data-visuals="low"] .bg-gradient-to-t,
+html[data-visuals="low"] .bg-gradient-to-l {
+  background-image: none !important;
+  background-color: rgba(255,255,255,0.5) !important;
+}
+html.dark[data-visuals="low"] .bg-gradient-to-r,
+html.dark[data-visuals="low"] .bg-gradient-to-b,
+html.dark[data-visuals="low"] .bg-gradient-to-t,
+html.dark[data-visuals="low"] .bg-gradient-to-l {
+  background-color: rgba(30,30,30,0.6) !important;
+}
+
+/* Animation tiers */
+html[data-anim="reduced"] * { animation-duration: 120ms !important; transition-duration: 120ms !important; }
+html[data-anim="off"], html.anim-off { 
+  scroll-behavior: auto !important;
+}
+html[data-anim="off"] *, html.anim-off * { animation: none !important; transition: none !important; }
+
 /* TipTap content tweaks: ensure italics and list markers render as expected */
 .tiptap em,
 .tiptap i {
@@ -181,3 +223,10 @@ button:focus-visible {
   border-left-color: rgba(255, 255, 255, 0.15);
   color: hsl(var(--muted-foreground));
 }
+
+/* ========================= */
+/* Progressive rendering helpers */
+/* ========================= */
+.cv-auto { content-visibility: auto; contain-intrinsic-size: 600px 800px; }
+.cv-auto-sm { content-visibility: auto; contain-intrinsic-size: 400px 600px; }
+.cv-auto-lg { content-visibility: auto; contain-intrinsic-size: 800px 1200px; }

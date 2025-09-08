@@ -1,0 +1,71 @@
+// sw.js - minimal custom service worker for AcademicQuest
+// Basic install + cache-first for core assets, network-first for dynamic chunks
+const VERSION = 'v2';
+const CACHE_NAME = `aq-core-${VERSION}`;
+const RUNTIME_FONT = `aq-font-${VERSION}`;
+const RUNTIME_API = `aq-api-${VERSION}`;
+const OFFLINE_URL = './offline.html';
+const CORE = [ './', './index.html', OFFLINE_URL ];
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(async c => {
+      try { await c.addAll(CORE); } catch(_){}
+    })
+  );
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+  );
+});
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  // Same-origin only
+  if (url.origin !== location.origin) {
+    // Basic network-first for cross-origin APIs (could expand later)
+    return;
+  }
+  // Static core & assets: cache-first
+  if (CORE.includes(url.pathname) || url.pathname.endsWith('.svg') || url.pathname.includes('/assets/')) {
+    e.respondWith(
+      caches.match(e.request).then(res => res || fetch(e.request).then(resp => {
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, copy));
+        return resp;
+      }))
+    );
+    return;
+  }
+  // Chunks: network-first with fallback
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, copy));
+        return resp;
+      }).catch(() => caches.match(e.request).then(r => r || caches.match(OFFLINE_URL)))
+    );
+    return;
+  }
+  // Fonts: cache-first with versioned font cache
+  if (url.pathname.match(/\.(woff2?|ttf|otf)$/)) {
+    e.respondWith(
+      caches.open(RUNTIME_FONT).then(cache => cache.match(e.request).then(found => {
+        if (found) return found;
+        return fetch(e.request).then(resp => { cache.put(e.request, resp.clone()); return resp; });
+      }))
+    );
+    return;
+  }
+  // API (future) example: /api/ -> network-first fallback to cache
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        const copy = resp.clone();
+        caches.open(RUNTIME_API).then(c => c.put(e.request, copy));
+        return resp;
+      }).catch(() => caches.open(RUNTIME_API).then(c => c.match(e.request)))
+    );
+    return;
+  }
+});

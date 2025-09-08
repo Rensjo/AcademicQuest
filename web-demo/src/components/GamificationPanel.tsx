@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Star, Trophy, Target, Calendar, Award, Zap, Crown, TestTube } from 'lucide-react'
+import { X, Star, Trophy, Target, Calendar, Award, Zap, Crown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGamification } from '@/store/gamificationStore'
-import { useNotifications, createLevelUpNotification, createBadgeNotification, createTaskCompletedNotification, createQuestCompletedNotification } from '@/store/notificationStore'
 
 interface GamificationPanelProps {
   isOpen: boolean
@@ -15,29 +14,7 @@ interface GamificationPanelProps {
 }
 
 export function GamificationPanel({ isOpen, onClose, defaultTab = 'status' }: GamificationPanelProps) {
-  const { stats, generateDailyQuests, checkAchievements, addXP, unlockBadge } = useGamification()
-  const { addNotification } = useNotifications()
-
-  // Test function for notifications (dev only)
-  const testNotifications = () => {
-    // Test level up
-    addNotification(createLevelUpNotification(stats.level + 1, 50))
-    
-    // Test badge earned
-    setTimeout(() => {
-      addNotification(createBadgeNotification("Study Warrior", "⚔️", "study_warrior"))
-    }, 1000)
-    
-    // Test task completed
-    setTimeout(() => {
-      addNotification(createTaskCompletedNotification(25, false))
-    }, 2000)
-    
-    // Test quest completed
-    setTimeout(() => {
-      addNotification(createQuestCompletedNotification("Complete 3 tasks", 30))
-    }, 3000)
-  }
+  const { stats, generateDailyQuests, checkAchievements } = useGamification()
 
   useEffect(() => {
     if (isOpen) {
@@ -118,15 +95,6 @@ export function GamificationPanel({ isOpen, onClose, defaultTab = 'status' }: Ga
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={testNotifications}
-                className="rounded-xl border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
-              >
-                <TestTube className="w-4 h-4 mr-2" />
-                Test Notifications
-              </Button>
               <Button 
                 variant="outline" 
                 size="icon" 

@@ -4,10 +4,12 @@ import { useSchedule, type DayIndex } from "@/store/scheduleStore";
 import { useSettings } from "@/store/settingsStore";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, isWithinNextNDays, AQTask, TaskStatus } from "@/store/tasksStore";
-import { useStudySessions, minutesByDay } from "@/store/studySessionsStore";
+import { useStudySessions } from "@/store/studySessionsStore";
 import { useAttendance } from "@/store/attendanceStore";
 
 import React, { useMemo, useState, useEffect } from "react";
+import { useSchedulerWorker } from '@/lib/workers/useSchedulerWorker';
+import type { SchedulerPayload } from '@/lib/workers/schedulerWorker';
 // import { DashboardQuickTasks } from "@/pages/Tasks";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon, Monitor } from "lucide-react";
@@ -40,6 +42,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 // removed unused Switch/Input
 import { Label } from "@/components/ui/label";
+// Recharts kept for high visual quality mode (conditionally rendered)
 import {
   PieChart,
   Pie,
@@ -51,10 +54,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  
   BarChart,
   Bar,
-} from "recharts";
+} from 'recharts';
+import { useChartRenderer } from '@/hooks/useChartRenderer';
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue
 } from "@/components/ui/select";
@@ -62,6 +65,7 @@ import { StudyHoursPanel } from "@/components/StudyHoursPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
 import { AttendanceWidget } from "@/components/AttendanceWidget";
 import { useGamification, XP_PER_LEVEL } from "@/store/gamificationStore";
+import { useSettings as useUserSettings } from '@/store/settingsStore';
 
 // Academic Quest — Interactive Dashboard Landing Page
 // Bright, customizable, gamified, with animations.
@@ -312,6 +316,8 @@ const GlowIconButton = ({
     );
 };
 
+// LowLine removed (superseded by chartRenderer.renderLine for medium/low quality)
+
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const Stat = ({ label, value, icon: Icon, hint, colors, onIconClick, iconType = 'academic' }: { 
@@ -367,6 +373,8 @@ const Feature = ({ icon: Icon, title, desc, cta, colors, onClick, iconType = 'fe
 );
 
 export default function AcademicQuestDashboard() {
+  const userSettings = useUserSettings();
+  const visualsQuality = userSettings.visualsQuality; // high | medium | low
   // User customizations (persisted to localStorage)
   const [compact, setCompact] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
@@ -461,48 +469,45 @@ export default function AcademicQuestDashboard() {
   }, [years, selectedYearId]);
   const activeTerm = React.useMemo(() => activeYear?.terms?.[0], [activeYear]);
 
-  // Tasks completion percent (match Tasks tab: only filled tasks by title, current term)
-  const taskPct = React.useMemo(() => {
+  // Background compute worker integration ----------------------------------
+  const { result: schedResult, run: runScheduler, error: workerError } = useSchedulerWorker();
+  const [hasRequestedAgg, setHasRequestedAgg] = useState(false);
+
+  useEffect(() => {
     const yid = activeYear?.id;
     const tid = activeTerm?.id;
-    if (!yid || !tid) return 0;
-    const termTasks = tasks.filter((t) => t.yearId === yid && t.termId === tid);
-    const filled = termTasks.filter((t) => (t.title?.trim()?.length ?? 0) > 0);
-    if (!filled.length) return 0;
-    const completed = filled.filter((t) => t.status === "Completed").length;
-    return Math.round((completed / filled.length) * 100);
-  }, [tasks, activeYear?.id, activeTerm?.id]);
+    if (!yid || !tid) return;
+  const minimalTasks: SchedulerPayload['tasks'] = tasks.map(t => ({ id: t.id, yearId: t.yearId, termId: t.termId, title: t.title || '', status: t.status }));
+  const minimalSessions: SchedulerPayload['studySessions'] = studySessions.map(s => ({ start: s.start, end: s.end }));
+    const courses = (activeTerm?.courses || []).map(c => ({ credits: c.credits, gpa: c.gpa }));
+    const payload: SchedulerPayload = { tasks: minimalTasks, studySessions: minimalSessions, courses, yearId: yid, termId: tid, visualsQuality };
+  runScheduler(payload);
+    setHasRequestedAgg(true);
+  }, [tasks, studySessions, activeYear?.id, activeTerm?.id, runScheduler, activeYear, activeTerm, activeTerm?.courses, visualsQuality]);
 
-  const taskDonutData = React.useMemo(() => ([
-    { name: "Complete", value: taskPct },
-    { name: "Remaining", value: 100 - taskPct },
+  const taskPct = schedResult?.taskCounts.pct ?? 0;
+  const chartRenderer = useChartRenderer();
+  const taskDonutData = useMemo(() => ([
+    { name: 'Complete', value: taskPct },
+    { name: 'Remaining', value: 100 - taskPct }
   ]), [taskPct]);
 
-  // Real study trend data for the last 7 days
-  const studyTrend = React.useMemo(() => {
-    const now = new Date();
-    const endDate = new Date(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 6);
-    
-    const dayData = minutesByDay(studySessions, startDate, endDate);
-    
-    return dayData.map(({ date, minutes }) => {
-      const dateObj = new Date(date);
-      return {
-        d: dateObj.toLocaleDateString('en-US', { weekday: 'short' }),
-        h: Math.round((minutes / 60) * 10) / 10 // Convert minutes to hours with 1 decimal
-      };
+  const studyTrend = useMemo(() => {
+    if (!schedResult) return [] as { d: string; h: number }[];
+    return schedResult.study7d.map(d => {
+      const dateObj = new Date(d.date);
+      return { d: dateObj.toLocaleDateString('en-US', { weekday: 'short' }), h: d.hours };
     });
-  }, [studySessions]);
+  }, [schedResult]);
 
   // Current term totals from Academic Planner: Units and GPA
-  const totalUnits = React.useMemo(() => {
+  const computedTotalUnits = React.useMemo(() => {
     const courses = activeTerm?.courses || [];
     return courses.reduce((sum, r) => sum + (Number(r.credits) || 0), 0);
   }, [activeTerm?.courses]);
+  const totalUnits = (schedResult?.gpa.totalCredits ?? 0) || computedTotalUnits;
 
-  const termGPA = React.useMemo(() => {
+  const computedTermGPA = React.useMemo(() => {
     const courses = activeTerm?.courses || [];
     const { wSum, cSum } = courses.reduce(
       (acc, r) => {
@@ -515,6 +520,7 @@ export default function AcademicQuestDashboard() {
     );
     return cSum > 0 ? wSum / cSum : 0;
   }, [activeTerm?.courses]);
+  const termGPA = schedResult?.gpa.weightedGpa ?? computedTermGPA;
 
   const displayGPA = React.useMemo(() => {
     const g = Math.max(0, Math.min(4, termGPA));
@@ -1106,32 +1112,28 @@ export default function AcademicQuestDashboard() {
 
             <Card className="border-0 shadow-lg bg-white/80 dark:bg-neutral-900/60 rounded-3xl">
               <CardContent className="p-5">
-                <h3 className="font-semibold mb-3">Task Completion</h3>
-    <div className="h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                      <Pie
-                        dataKey="value"
-      data={taskDonutData}
-                        innerRadius={55}
-                        outerRadius={80}
-                        startAngle={90}
-                        endAngle={-270}
-                        paddingAngle={2}
-                        cornerRadius={3}
-                        stroke="transparent"
-                        isAnimationActive
-                        animationBegin={100}
-                        animationDuration={800}
-                        animationEasing="ease-out"
-                      >
-      {taskDonutData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">Task Completion {workerError && <span className="text-red-500 text-xs">Worker error</span>}</h3>
+                <div className="h-40">
+                  {!schedResult && hasRequestedAgg && (
+                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground animate-pulse">Computing…</div>
+                  )}
+                  {schedResult && (
+                    visualsQuality === 'high' ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                          <Pie dataKey="value" data={taskDonutData} innerRadius={55} outerRadius={80} startAngle={90} endAngle={-270} paddingAngle={2} cornerRadius={3} stroke="transparent" isAnimationActive animationBegin={100} animationDuration={800} animationEasing="ease-out">
+                            {taskDonutData.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
+                          </Pie>
+                          {(visualsQuality === 'high') && <Tooltip />}
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      chartRenderer.renderDonut([
+                        { label: 'Complete', value: taskPct, color: COLORS[0] },
+                        { label: 'Remaining', value: 100 - taskPct, color: '#e5e7eb' }
+                      ], { size: 140 })
+                    )
+                  )}
                 </div>
                 <div className="mt-2 flex items-center justify-center gap-5 text-sm">
                   <span className="inline-flex items-center gap-2">
@@ -1149,7 +1151,7 @@ export default function AcademicQuestDashboard() {
                     Remaining
                   </span>
                 </div>
-                <p className="text-sm text-neutral-600">{taskPct}% completed this term</p>
+                <p className="text-sm text-neutral-600">{schedResult ? `${taskPct}% completed this term` : '—'}</p>
               </CardContent>
             </Card>
           </div>
@@ -1369,15 +1371,38 @@ export default function AcademicQuestDashboard() {
                     </Button>
                   </div>
                   <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RLineChart data={studyTrend} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="d" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="h" stroke={COLORS[0]} strokeWidth={3} dot={{ r: 3 }} />
-                      </RLineChart>
-                    </ResponsiveContainer>
+                    {!schedResult && hasRequestedAgg && (
+                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground animate-pulse">Computing…</div>
+                    )}
+                    {schedResult && (
+                      visualsQuality === 'high' ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RLineChart data={studyTrend} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="d" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="h" stroke={COLORS[0]} strokeWidth={3} dot={{ r: 3 }} />
+                          </RLineChart>
+                        </ResponsiveContainer>
+                      ) : schedResult.lineChartBitmap ? (
+                        <canvas
+                          ref={(el) => {
+                            if (!el) return;
+                            try {
+                              const ctx = el.getContext('2d');
+                              if (!ctx) return;
+                              el.width = 500; el.height = 180;
+                              ctx.clearRect(0,0,500,180);
+                              ctx.drawImage(schedResult.lineChartBitmap, 0, 0, 500, 180);
+                            } catch {/* ignore */}
+                          }}
+                          className="w-full h-full block"
+                        />
+                      ) : (
+                        chartRenderer.renderLine(studyTrend.map((d,i)=>({ x: i, y: d.h })), { width: 500, height: 180 })
+                      )
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1603,7 +1628,7 @@ export default function AcademicQuestDashboard() {
           </Dialog>
 
           {/* All‑tabs Summary (clickable previews) */}
-          <div className="mt-10">
+          <div className="mt-10 cv-auto">
             <h2 className="text-xl font-semibold tracking-tight mb-4">Everything in one place</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               <Feature
@@ -1681,7 +1706,7 @@ export default function AcademicQuestDashboard() {
           </div>
 
           {/* Gamification strip */}
-          <div className="mt-12">
+          <div className="mt-12 cv-auto">
             <Card className="border-0 shadow-lg rounded-3xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-md">
               <CardContent className="p-6 md:p-8">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 ">

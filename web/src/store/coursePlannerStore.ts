@@ -78,6 +78,30 @@ type State = {
 
 const uid = (p = "id") => `${p}_${Math.random().toString(36).slice(2, 8)}`;
 
+// ---- Internal helpers to avoid unnecessary state churn (helps prevent deep update loops) ----
+// We purposefully do shallow comparisons only on the frequently edited fields; modules / folders arrays
+// can be large, so we only check reference equality for them. If they haven't changed, we skip updating state.
+function shallowEqualCourse(a: Course, b: Course): boolean {
+  return (
+    a === b || (
+      a.id === b.id &&
+      a.code === b.code &&
+      a.title === b.title &&
+      a.instructor === b.instructor &&
+      a.syllabusUrl === b.syllabusUrl &&
+      a.linkedSlotId === b.linkedSlotId &&
+      a.weeklyAttendance === b.weeklyAttendance && // reference compare – structure mutates immutably elsewhere
+      a.modules === b.modules &&
+      a.tasks === b.tasks &&
+      a.folders === b.folders
+    )
+  );
+}
+
+// For rapid keystrokes in the RichTextEditor we may get identical HTML several times in a row.
+// Cache last HTML per module to short‑circuit redundant store writes (which can cascade renders).
+const lastModuleHTML = new Map<string, string>(); // key => moduleId
+
 export const useCoursePlanner = create<State>()(
   persist(
   (set, get) => ({
@@ -135,7 +159,11 @@ export const useCoursePlanner = create<State>()(
         set((s) => ({
           byYearTerm: {
             ...s.byYearTerm,
-            [key]: (s.byYearTerm[key] || []).map((c) => (c.id === course.id ? course : c)),
+            [key]: (s.byYearTerm[key] || []).map((c) => {
+              if (c.id !== course.id) return c;
+              // Avoid replacing with an object that is effectively the same to reduce re-renders.
+              return shallowEqualCourse(c, course) ? c : course;
+            }),
           },
         })),
 
@@ -175,9 +203,21 @@ export const useCoursePlanner = create<State>()(
         set((s) => ({
           byYearTerm: {
             ...s.byYearTerm,
-            [key]: (s.byYearTerm[key] || []).map((c) =>
-              c.id !== courseId ? c : { ...c, modules: c.modules.map((m) => (m.id === moduleId ? { ...m, html } : m)) }
-            ),
+            [key]: (s.byYearTerm[key] || []).map((c) => {
+              if (c.id !== courseId) return c;
+              let changed = false;
+              const nextModules = c.modules.map((m) => {
+                if (m.id !== moduleId) return m;
+                const last = lastModuleHTML.get(moduleId);
+                if (last === html || m.html === html) {
+                  return m; // skip identical html update
+                }
+                changed = true;
+                lastModuleHTML.set(moduleId, html);
+                return { ...m, html };
+              });
+              return changed ? { ...c, modules: nextModules } : c;
+            }),
           },
         })),
 

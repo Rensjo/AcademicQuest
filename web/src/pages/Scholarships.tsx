@@ -181,7 +181,7 @@ export default function Scholarships() {
 						</div>
 						<div className="w-full overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/50 shadow-sm backdrop-blur-sm">
 							<table className="w-full text-xs">
-								<thead className="sticky top-0 bg-white/70 dark:bg-neutral-900/50 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-neutral-900/40 border-b border-black/10 dark:border-white/10">
+								<thead className="sticky top-0 bg-white/90 dark:bg-neutral-900/90 border-b border-black/10 dark:border-white/10">
 									<tr className="text-left">
 										<th className="px-3 py-2 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
 										<th className="px-3 py-2 w-[170px] font-semibold text-gray-700 dark:text-gray-200">Status</th>

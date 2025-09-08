@@ -7,9 +7,163 @@ import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useAcademicPlan } from "@/store/academicPlanStore";
 import { useTasksStore, tasksByTerm, AQTask, TaskStatus } from "@/store/tasksStore";
+import { useTaskSelectors, useOptimizedTaskActions } from "@/lib/task-selectors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTheme, PALETTES } from "@/store/theme";
 import TopTabsInline from "@/components/TopTabsInline";
+import { validateArray, safeLocalStorage, debounce } from "@/lib/utils";
+import { useMainThreadScheduler, createOptimizedStateUpdater } from "@/lib/main-thread-scheduler";
+import { initPerformanceMonitor } from "@/lib/performance-monitor";
+import { usePageResource, useHeavyComponent, useOptimizedFormInput } from "@/lib/resource-manager";
+
+// Performance optimization: Memoize heavy components
+interface CourseOption { id: string; display: string }
+const MemoizedTaskRow = React.memo(({ 
+  task, 
+  courseOptions,
+  onUpdate, 
+  onDelete,
+  isPlaceholder = false 
+}: {
+  task: AQTask | { id: string; title: string; status: TaskStatus; courseId?: string; dueDate?: string; dueTime?: string; grade?: string }
+  courseOptions: CourseOption[]
+  onUpdate: (id: string, updates: Partial<AQTask>) => void
+  onDelete: (id: string) => void
+  isPlaceholder?: boolean
+}) => {
+  // Local state for immediate UI updates
+  const [localTitle, setLocalTitle] = React.useState(task.title || "")
+  const [localDate, setLocalDate] = React.useState(task.dueDate || "")
+  const [localTime, setLocalTime] = React.useState(task.dueTime || "")
+  const [localGrade, setLocalGrade] = React.useState(task.grade || "")
+
+  // Debounced updates to prevent excessive re-renders
+  const debouncedUpdate = React.useMemo(
+    () => debounce((updates: Partial<AQTask>) => {
+      if (!isPlaceholder) {
+        onUpdate(task.id, updates)
+      }
+    }, 300),
+    [task.id, onUpdate, isPlaceholder]
+  )
+
+  // Sync local state with prop changes
+  React.useEffect(() => {
+    setLocalTitle(task.title || "")
+    setLocalDate(task.dueDate || "")
+    setLocalTime(task.dueTime || "")
+    setLocalGrade(task.grade || "")
+  }, [task.title, task.dueDate, task.dueTime, task.grade])
+
+  const handleTitleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLocalTitle(value)
+    debouncedUpdate({ title: value })
+  }, [debouncedUpdate])
+
+  const handleDateChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLocalDate(value)
+    onUpdate(task.id, { dueDate: value }) // Immediate for dates
+  }, [task.id, onUpdate])
+
+  const handleTimeChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLocalTime(value)
+    onUpdate(task.id, { dueTime: value }) // Immediate for times
+  }, [task.id, onUpdate])
+
+  const handleGradeChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLocalGrade(value)
+    debouncedUpdate({ grade: value })
+  }, [debouncedUpdate])
+
+  return (
+    <tr className="border-t border-gray-200/40 dark:border-gray-600/30 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
+      <td className="px-2 py-2 w-[120px] max-w-[120px] overflow-hidden">
+        <Select 
+          value={task.courseId || ""} 
+          onValueChange={(value) => onUpdate(task.id, { courseId: value })}
+        >
+          <SelectTrigger className="h-8 w-full rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs overflow-hidden">
+            <SelectValue placeholder="Select course" />
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl ring-1 ring-gray-200/50 dark:ring-gray-600/50">
+            {courseOptions.map((option) => (
+              <SelectItem 
+                key={option.id} 
+                value={option.id}
+                className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
+              >
+                {option.display}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+      <td className="px-2 py-2">
+        <Input 
+          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
+          value={localTitle} 
+          onChange={handleTitleChange} 
+          placeholder="Assignment title" 
+        />
+      </td>
+      <td className="px-2 py-2">
+        <Select 
+          value={task.status || "Not Started"} 
+          onValueChange={(value) => onUpdate(task.id, { status: value as TaskStatus })}
+        >
+          <SelectTrigger className="h-8 rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs">
+            <SelectValue placeholder="Status"/>
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl ring-1 ring-gray-200/50 dark:ring-gray-600/50">
+            <SelectItem value="Not Started" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">Not Started</SelectItem>
+            <SelectItem value="In Progress" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">In Progress</SelectItem>
+            <SelectItem value="Completed" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
+      <td className="px-2 py-2">
+        <Input 
+          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
+          type="date" 
+          value={localDate} 
+          onChange={handleDateChange} 
+        />
+      </td>
+      <td className="px-2 py-2">
+        <Input 
+          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
+          type="time" 
+          value={localTime} 
+          onChange={handleTimeChange} 
+        />
+      </td>
+      <td className="px-2 py-2">
+        <Input 
+          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20 transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
+          value={localGrade} 
+          onChange={handleGradeChange} 
+          placeholder="Grade" 
+        />
+      </td>
+      <td className="px-2 py-2">
+        {!isPlaceholder && (
+          <Button
+            variant="ghost" 
+            size="sm"
+            onClick={() => onDelete(task.id)}
+            className="h-8 w-8 p-0 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </td>
+    </tr>
+  )
+})
 
 // Using global AQTask from tasks store
 
@@ -43,7 +197,20 @@ function useThemedGradient() {
 }
 
 export default function Tasks() {
-  const gradientStyle = useThemedGradient();
+  // Performance and resource management
+  const { performanceMode } = usePageResource('tasks')
+  const canRenderHeavyComponents = useHeavyComponent('tasks-table', 8) // High priority
+  
+  // Initialize performance monitoring for production optimization
+  const performanceMonitor = React.useMemo(() => initPerformanceMonitor(), []);
+  
+  // Gradient separated as non-interactive layer
+  const gradientBase = useThemedGradient();
+  const gradientStyle: React.CSSProperties = { ...gradientBase, pointerEvents: 'none' };
+  
+  // Initialize performance optimizations
+  const scheduler = useMainThreadScheduler()
+  
   // Pull academic plan data
   const years = useAcademicPlan((s) => s.years);
   const selectedYearId = useAcademicPlan((s) => s.selectedYearId);
@@ -52,65 +219,106 @@ export default function Tasks() {
   const [activeYearId, setActiveYearId] = React.useState<string | undefined>(() => selectedYearId || years[0]?.id);
   const [activeTermId, setActiveTermId] = React.useState<string | undefined>(() => years[0]?.terms[0]?.id);
 
+  // Optimized state updaters
+  const optimizedSetActiveYearId = React.useMemo(
+    () => createOptimizedStateUpdater(setActiveYearId, { priority: 'high' }),
+    []
+  )
+  const optimizedSetActiveTermId = React.useMemo(
+    () => createOptimizedStateUpdater(setActiveTermId, { priority: 'high' }),
+    []
+  )
+
   // Keep active ids valid when plan changes
   React.useEffect(() => {
     if (!years.length) return;
     const year = years.find((y) => y.id === activeYearId) || years[0];
     const term = year.terms.find((t) => t.id === activeTermId) || year.terms[0];
-    if (year.id !== activeYearId) setActiveYearId(year.id);
-    if (term?.id !== activeTermId) setActiveTermId(term?.id);
-  }, [years, activeYearId, activeTermId]);
+    if (year.id !== activeYearId) optimizedSetActiveYearId(year.id);
+    if (term?.id !== activeTermId) optimizedSetActiveTermId(term?.id);
+  }, [years, activeYearId, activeTermId, optimizedSetActiveYearId, optimizedSetActiveTermId]);
 
   const activeYear = React.useMemo(() => years.find((y) => y.id === activeYearId), [years, activeYearId]);
   const activeTerm = React.useMemo(() => activeYear?.terms.find((t) => t.id === activeTermId), [activeYear, activeTermId]);
-  const termCourses = React.useMemo(() => (activeTerm?.courses || []).filter((c) => (c.code?.trim() || c.name?.trim())), [activeTerm]);
-
-  // Simplified course lookup - use course.id as the Select value for consistency
-  const getCourseByCourseId = React.useCallback((courseId?: string) => {
-    if (!courseId) return null;
-    
-    // First try to find by the courseId directly (should be course.id)
-    let course = termCourses.find(c => c.id === courseId);
-    
-    // Fallback: try to find by code (uppercase) for backward compatibility
-    if (!course) {
-      course = termCourses.find(c => c.code?.trim().toUpperCase() === courseId.toUpperCase());
-    }
-    
-    // Final fallback: try to find by name
-    if (!course) {
-      course = termCourses.find(c => c.name?.trim() === courseId);
-    }
-    
-    return course;
-  }, [termCourses]);
-
-  // Helper to format course display (optimized for smaller width)
-  const formatCourseDisplay = React.useCallback((course: { code?: string; name?: string }) => {
-    const code = course.code?.trim();
-    const name = course.name?.trim();
-    
-    // For smaller column, prioritize course code and limit name length
-    if (code && name) {
-      // If name is short, show both. If long, truncate name or show code only
-      if (name.length <= 15) {
-        return `${code} — ${name}`;
-      } else {
-        return `${code} — ${name.substring(0, 12)}...`;
-      }
-    }
-    return code || name || 'Untitled';
-  }, []);
+  const courseOptions = React.useMemo(() => {
+    const courses = (activeTerm?.courses || []).filter(c => (c.code?.trim() || c.name?.trim()));
+    return courses.map(course => ({
+      id: course.id,
+      display: course.code && course.name
+        ? `${course.code} - ${course.name.length > 20 ? course.name.substring(0, 20) + '...' : course.name}`
+        : course.code || course.name || 'Untitled'
+    }));
+  }, [activeTerm]);
 
   // Global tasks store
+  // Use optimized selectors to prevent unnecessary re-renders
+  const { tasksPageData } = useTaskSelectors()
+  const { debouncedUpdate } = useOptimizedTaskActions()
+  
+  // Legacy store access for compatibility
   const tasks = useTasksStore((s) => s.tasks);
   const addTask = useTasksStore((s) => s.addTask);
   const updateTask = useTasksStore((s) => s.updateTask);
   const removeTask = useTasksStore((s) => s.removeTask);
 
-  // Active-term tasks from store
+  // Validate and optimize task data for performance using scheduler
+  const validatedTasks = React.useMemo(() => {
+    // For large datasets, schedule background validation
+    if (tasks.length > 100) {
+      scheduler.scheduleLowPriorityTask(() => {
+        const validatedData = validateArray(tasks, (item): item is AQTask => {
+          return item && 
+                 typeof item === 'object' &&
+                 'id' in item && 
+                 'title' in item &&
+                 'status' in item &&
+                 typeof item.id === 'string' &&
+                 typeof item.status === 'string'
+        })
+        // Store validated data for future use
+        console.log('Background validation completed:', validatedData.length, 'valid tasks')
+      })
+      // Return current tasks while processing in background
+      return tasks.filter(task => task && typeof task === 'object' && 'id' in task) as AQTask[]
+    }
+    
+    return validateArray(tasks, (item): item is AQTask => {
+      return item && 
+             typeof item === 'object' &&
+             'id' in item && 
+             'title' in item &&
+             'status' in item &&
+             typeof item.id === 'string' &&
+             typeof item.status === 'string'
+    })
+  }, [tasks, scheduler])
+
+  // Data corruption detection and recovery
+  React.useEffect(() => {
+    try {
+      const hasCorruption = validatedTasks.length !== tasks.length
+      
+      if (hasCorruption) {
+        console.warn(`Tasks data corruption detected: ${tasks.length} raw tasks -> ${validatedTasks.length} valid tasks`)
+        
+        // If more than 50% of tasks are corrupted, consider clearing storage
+        const corruptionRatio = 1 - (validatedTasks.length / Math.max(tasks.length, 1))
+        if (corruptionRatio > 0.5 && tasks.length > 0) {
+          console.warn('Severe task corruption detected, clearing localStorage')
+          safeLocalStorage.clear()
+          window.location.reload()
+        }
+      }
+    } catch (error) {
+      console.error('Error validating task data:', error)
+      safeLocalStorage.clear()
+      window.location.reload()
+    }
+  }, [tasks, validatedTasks])
+
+  // Active-term tasks from store (using validated data)
   const termKey = activeYear && activeTerm ? `${activeYear.id}:${activeTerm.id}` : "";
-  const termTasks: AQTask[] = React.useMemo(() => tasksByTerm(tasks, activeYearId, activeTermId), [tasks, activeYearId, activeTermId]);
+  const termTasks: AQTask[] = React.useMemo(() => tasksByTerm(validatedTasks, activeYearId, activeTermId), [validatedTasks, activeYearId, activeTermId]);
 
   // Sorting state
   const [sortByDeadline, setSortByDeadline] = React.useState(false);
@@ -120,7 +328,7 @@ export default function Tasks() {
   const [spawned, setSpawned] = React.useState<Set<string>>(new Set());
   React.useEffect(() => { setSpawned(new Set()); }, [termKey]);
 
-  function spawnFromPlaceholder(phKey: string, patch: Partial<AQTask>) {
+  const spawnFromPlaceholder = React.useCallback((phKey: string, patch: Partial<AQTask>) => {
     if (!activeYear || !activeTerm) return;
     if (spawned.has(phKey)) return;
     const base: AQTask = {
@@ -138,21 +346,44 @@ export default function Tasks() {
     const next = new Set(spawned);
     next.add(phKey);
     setSpawned(next);
-  }
+  }, [activeYear, activeTerm, spawned, addTask]);
 
   type PlaceholderRow = { id: string; courseId?: string; title: string; status: TaskStatus; dueDate?: string; dueTime?: string; grade?: string };
   const placeholders: PlaceholderRow[] = React.useMemo(
     () => Array.from({ length: placeholderCount }).map((_, i) => ({ id: `ph:${i}`, courseId: "", title: "", status: "Not Started", dueDate: "", dueTime: "", grade: "" })),
     [placeholderCount]
   );
-  const displayRows: (AQTask | PlaceholderRow)[] = React.useMemo(() => {
+
+  // Optimized days-left helper with memoization
+  const getDaysLeft = React.useCallback((dueDate?: string): number | undefined => {
+    if (!dueDate) return undefined;
+    const today = new Date();
+    const d0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const due = new Date(dueDate);
+    const d1 = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    const diff = (d1.getTime() - d0.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.round(diff);
+  }, []);
+
+  // Pre-calculate days left for all tasks to avoid repeated computation
+  const taskDaysLeftMap = React.useMemo(() => {
+    const map = new Map<string, number | undefined>();
+    termTasks.forEach(task => {
+      if (task?.id) {
+        map.set(task.id, getDaysLeft(task.dueDate));
+      }
+    });
+    return map;
+  }, [termTasks, getDaysLeft]);
+
+  const rawDisplayRows: (AQTask | PlaceholderRow)[] = React.useMemo(() => {
     const sortedTasks = [...termTasks];
     
     if (sortByDeadline) {
       // Sort by days left: closest deadline first
       sortedTasks.sort((a, b) => {
-        const daysA = getDaysLeft(a.dueDate);
-        const daysB = getDaysLeft(b.dueDate);
+        const daysA = taskDaysLeftMap.get(a.id);
+        const daysB = taskDaysLeftMap.get(b.id);
         
         // Handle undefined dates (tasks without due dates go to end)
         if (daysA === undefined && daysB === undefined) return 0;
@@ -170,7 +401,75 @@ export default function Tasks() {
     }
     
     return [...sortedTasks, ...placeholders];
-  }, [termTasks, placeholders, sortByDeadline]);
+  }, [termTasks, placeholders, sortByDeadline, taskDaysLeftMap]);
+  const displayRows = React.useDeferredValue(rawDisplayRows);
+
+  // ---- Simple list virtualization (manual windowing) ----
+  const ROW_HEIGHT = 44; // approximate px height of each row
+  // Removed LIST_PADDING (was unused after virtualization refinement)
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const listRef = React.useRef<HTMLDivElement | null>(null);
+  const totalRows = displayRows.length;
+  const [viewportHeight, setViewportHeight] = React.useState(600);
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const resize = () => setViewportHeight(el.clientHeight || 600);
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+  // rAF-throttled scroll handler + velocity detection for coarse visibility toggle
+  const scrollRaf = React.useRef<number | null>(null);
+  const [isFastScrolling, setIsFastScrolling] = React.useState(false);
+  const lastTopRef = React.useRef(0);
+  const lastTimeRef = React.useRef(performance.now());
+  
+  const onScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const scrollStartTime = performance.now();
+    const top = e.currentTarget.scrollTop;
+    const now = performance.now();
+    const dt = now - lastTimeRef.current;
+    const dy = Math.abs(top - lastTopRef.current);
+    
+    if (dt > 0) {
+      const velocity = dy / dt; // px per ms
+      
+      // Track scroll performance metrics
+      performanceMonitor.trackScrollPerformance({
+        velocity,
+        deltaTime: dt,
+        deltaY: dy,
+        isFastScroll: velocity > 1.2
+      });
+      
+      if (velocity > 1.2) {
+        if (!isFastScrolling) setIsFastScrolling(true);
+      }
+    }
+    
+    lastTopRef.current = top;
+    lastTimeRef.current = now;
+    
+    if (scrollRaf.current !== null) cancelAnimationFrame(scrollRaf.current);
+    scrollRaf.current = requestAnimationFrame(() => {
+      setScrollTop(top);
+      // reset fast-scrolling state slightly later (next frame) to allow stabilization
+      requestAnimationFrame(() => setIsFastScrolling(false));
+      
+      // Track scroll render time
+      const scrollRenderTime = performance.now() - scrollStartTime;
+      if (scrollRenderTime > 16) { // Log if slower than 60fps
+        performanceMonitor.logWarning(`Slow scroll render: ${scrollRenderTime.toFixed(2)}ms`);
+      }
+    });
+  }, [isFastScrolling, performanceMonitor]);
+  React.useEffect(() => () => { if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current); }, []);
+  const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
+  const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + 4; // reduced overscan
+  const endIndex = Math.min(totalRows, startIndex + visibleCount);
+  const windowedRows = displayRows.slice(startIndex, endIndex);
+  const offsetY = startIndex * ROW_HEIGHT;
 
   // Only consider "filled" tasks (non-empty title)
   const filled = termTasks.filter(r => (r.title?.trim()?.length ?? 0) > 0);
@@ -183,10 +482,40 @@ export default function Tasks() {
     { name: "left", value: 100 - pct },
   ];
 
+  // Optimized handlers for the memoized component
+  const handleTaskUpdate = React.useCallback((taskId: string, updates: Partial<AQTask>) => {
+    if (taskId.startsWith('ph:')) {
+      spawnFromPlaceholder(taskId, updates);
+    } else {
+      updateTask(taskId, updates);
+    }
+  }, [spawnFromPlaceholder, updateTask]);
+
+  const handleTaskDelete = React.useCallback((taskId: string) => {
+    if (!taskId.startsWith('ph:')) {
+      removeTask(taskId);
+    }
+  }, [removeTask]);
+
+  // Virtual rendering for better performance - only render visible tasks
+  const visibleTasks = windowedRows;
+
   function addRow() {
     if (!activeYear || !activeTerm) return;
-    addTask({ id: crypto.randomUUID(), yearId: activeYear.id, termId: activeTerm.id, courseId: "", title: "", status: "Not Started", dueDate: undefined, dueTime: undefined, grade: undefined });
+    addTask({ 
+      id: crypto.randomUUID(), 
+      yearId: activeYear.id, 
+      termId: activeTerm.id, 
+      courseId: "", 
+      title: "", 
+      status: "Not Started", 
+      dueDate: undefined, 
+      dueTime: undefined, 
+      grade: undefined 
+    });
   }
+
+  // Fast multi-add (not yet exposed in UI, but available for future import flows)
 
   // Term/Yr selection dialog
   const [termDialogOpen, setTermDialogOpen] = React.useState(false);
@@ -197,20 +526,11 @@ export default function Tasks() {
     setTermDialogOpen(false);
   }
 
-  // Days-left helper (calendar days difference, ignoring time)
-  function getDaysLeft(dueDate?: string): number | undefined {
-    if (!dueDate) return undefined;
-    const today = new Date();
-    const d0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const due = new Date(dueDate);
-    const d1 = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-    const diff = (d1.getTime() - d0.getTime()) / (1000 * 60 * 60 * 24);
-    return Math.round(diff);
-  }
-
   return (
-    <div className="min-h-screen w-full" style={gradientStyle}>
-      <div className="max-w-[1400px] mx-auto px-4 py-7 space-y-6">
+    <div className="min-h-screen w-full relative">
+      {/* Decorative gradient background layer */}
+      <div className="absolute inset-0 -z-10" style={gradientStyle} />
+      <div className="max-w/[1400px] mx-auto px-4 py-7 space-y-6 relative">
         {/* Header: title on first row, tabs on second; donut on right */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -335,9 +655,9 @@ export default function Tasks() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="w-full overflow-x-auto rounded-2xl bg-gradient-to-r from-white/60 to-gray-50/40 dark:from-neutral-800/60 dark:to-neutral-900/40 
-                          backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 shadow-lg">
-              <table className="w-full text-xs">
+            <div ref={listRef} onScroll={onScroll} style={{maxHeight: '520px', overflow: 'auto'}} className="w-full overflow-x-auto rounded-2xl bg-gradient-to-r from-white/60 to-gray-50/40 dark:from-neutral-800/60 dark:to-neutral-900/40 
+                          backdrop-blur-md border border-gray-200/60 dark:border-gray-600/40 shadow-lg will-change-transform">
+              <table className="w-full text-xs" style={{position:'relative', willChange: 'transform'}}>
                 <thead className="sticky top-0 bg-gradient-to-r from-white/80 to-gray-50/60 dark:from-neutral-800/80 dark:to-neutral-900/60 
                                 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-600/40">
                   <tr className="text-left">
@@ -351,172 +671,43 @@ export default function Tasks() {
                     <th className="px-3 py-2 w-[50px] font-semibold text-gray-700 dark:text-gray-200"></th>
                   </tr>
                 </thead>
-                <tbody>
-                  {displayRows.map((r) => (
-                    <tr key={r.id} className="border-t border-gray-200/40 dark:border-gray-600/30 hover:bg-white/30 dark:hover:bg-neutral-700/20 transition-colors duration-200">
-                      <td className="px-2 py-2 w-[120px] max-w-[120px] overflow-hidden">
-                        <Select 
-                          value={getCourseByCourseId(r.courseId)?.id || ""} 
-                          onValueChange={(v) => {
-                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                              spawnFromPlaceholder(r.id, { courseId: v });
-                            } else {
-                              updateTask(r.id as string, { courseId: v });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-8 w-full rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                                   transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs overflow-hidden">
-                            <SelectValue placeholder="Select course">
-                              {getCourseByCourseId(r.courseId) ? (
-                                <span className="block truncate text-left overflow-hidden">{formatCourseDisplay(getCourseByCourseId(r.courseId)!)}</span>
-                              ) : (
-                                <span className="block truncate text-left text-gray-500 dark:text-gray-400">Select course</span>
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
-                                                   ring-1 ring-gray-200/50 dark:ring-gray-600/50">
-                            {termCourses.length === 0 && (
-                              <SelectItem value="__no_courses__" disabled>No courses</SelectItem>
-                            )}
-                            {termCourses.map((c) => (
-                              <SelectItem 
-                                key={c.id} 
-                                value={c.id}
-                                className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
-                                          focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
-                                          transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
-                              >
-                                <span className="block truncate">{formatCourseDisplay(c)}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-2 py-2">
-                        <Input 
-                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
-                          value={r.title} 
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                              spawnFromPlaceholder(r.id, { title: val });
-                            } else {
-                              updateTask(r.id as string, { title: val });
-                            }
-                          }} 
-                          placeholder="Assignment title" 
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <Select value={r.status} onValueChange={(v) => {
-                          const st = v as TaskStatus;
-                          if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                            spawnFromPlaceholder(r.id, { status: st });
-                          } else {
-                            updateTask(r.id as string, { status: st });
-                          }
-                        }}>
-                          <SelectTrigger className="h-8 rounded-lg bg-white/80 dark:bg-neutral-800/80 border-gray-200/60 dark:border-gray-600/40 
-                                                   focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                                   transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs">
-                            <SelectValue placeholder="Status"/>
-                          </SelectTrigger>
-                          <SelectContent className="rounded-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-0 shadow-2xl 
-                                                   ring-1 ring-gray-200/50 dark:ring-gray-600/50">
-                            <SelectItem value="Not Started" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
-                                                                      focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
-                                                                      transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">Not Started</SelectItem>
-                            <SelectItem value="In Progress" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
-                                                                     focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
-                                                                     transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">In Progress</SelectItem>
-                            <SelectItem value="Completed" className="rounded-xl mx-1 my-0.5 focus:bg-cyan-50/90 dark:focus:bg-cyan-950/30 
-                                                                    focus:text-cyan-700 dark:focus:text-cyan-300 cursor-pointer
-                                                                    transition-all duration-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20">Completed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-2 py-2">
-                        <Input 
-                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
-                          type="date" 
-                          value={r.dueDate || ""} 
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                              spawnFromPlaceholder(r.id, { dueDate: val });
-                            } else {
-                              updateTask(r.id as string, { dueDate: val });
-                            }
-                          }} 
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <Input 
-                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
-                          type="time" 
-                          value={r.dueTime || ""} 
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                              spawnFromPlaceholder(r.id, { dueTime: val });
-                            } else {
-                              updateTask(r.id as string, { dueTime: val });
-                            }
-                          }} 
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        {(() => {
-                          const d = getDaysLeft(r.dueDate);
-                          if (d === undefined) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
-                          const cls = d < 0 ? "text-red-500 font-semibold" : d === 0 ? "text-amber-600 font-semibold" : "text-gray-600 dark:text-gray-300";
-                          return <span className={`${cls} text-xs`}>{d}d</span>;
-                        })()}
-                      </td>
-                      <td className="px-2 py-2">
-                        <Input 
-                          className="h-8 rounded-lg bg-white/80 dark:bg-neutral-900/60 border-gray-200/60 dark:border-gray-600/40 
-                                    focus:border-blue-400/60 dark:focus:border-blue-400/60 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-400/20
-                                    transition-all duration-200 backdrop-blur-sm text-gray-700 dark:text-gray-200 text-xs" 
-                          value={r.grade || ""} 
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (typeof r.id === 'string' && r.id.startsWith('ph:')) {
-                              spawnFromPlaceholder(r.id, { grade: val });
-                            } else {
-                              updateTask(r.id as string, { grade: val });
-                            }
-                          }} 
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        {/* Only show delete button for actual tasks, not placeholders, and only if task has content */}
-                        {typeof r.id === 'string' && !r.id.startsWith('ph:') && (r.title?.trim() || r.courseId) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-6 w-6 p-0 rounded-lg 
-                                      text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400
-                                      hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all duration-200
-                                      focus:text-red-500 dark:focus:text-red-400"
-                            onClick={() => removeTask(r.id as string)}
-                            title="Delete task"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        ) : null}
+                <tbody style={{
+                  display:'block', 
+                  position:'relative', 
+                  height: totalRows * ROW_HEIGHT,
+                  willChange: canRenderHeavyComponents ? 'transform' : 'auto',
+                  transform: 'translateZ(0)' // Force GPU acceleration when resources allow
+                }}>
+                  <tr style={{height: offsetY}} aria-hidden="true"><td style={{padding:0,margin:0,border:0}} /></tr>
+                  {canRenderHeavyComponents ? visibleTasks.map((r) => {
+                    if (isFastScrolling) {
+                      return (
+                        <tr key={r.id} className="border-t border-transparent">
+                          <td colSpan={8} style={{height: ROW_HEIGHT}} className="px-2 py-2">
+                            <div className="h-6 rounded-md bg-gradient-to-r from-gray-200/60 via-gray-100/40 to-gray-200/60 dark:from-neutral-700/40 dark:via-neutral-800/30 dark:to-neutral-700/40 animate-pulse" />
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return (
+                      <MemoizedTaskRow
+                        key={r.id}
+                        task={r}
+                        courseOptions={courseOptions}
+                        onUpdate={handleTaskUpdate}
+                        onDelete={handleTaskDelete}
+                        isPlaceholder={typeof r.id === 'string' && r.id.startsWith('ph:')}
+                      />
+                    );
+                  }) : (
+                    // Show skeleton rows when resources are limited
+                    <tr className="border-t border-transparent">
+                      <td colSpan={8} style={{height: ROW_HEIGHT * 5}} className="px-2 py-2 text-center text-gray-500 dark:text-gray-400">
+                        Loading optimized view...
                       </td>
                     </tr>
-                  ))}
+                  )}
+                  <tr style={{height: (totalRows - endIndex) * ROW_HEIGHT}} aria-hidden="true"><td style={{padding:0,margin:0,border:0}} /></tr>
                 </tbody>
               </table>
             </div>

@@ -325,15 +325,15 @@ export const AttendanceWidget: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <span>Less</span>
+                <span>Absent</span>
                 <div className="flex gap-1">
                   <div className="w-2.5 h-2.5 rounded-sm bg-neutral-100 dark:bg-neutral-800"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-300 dark:bg-green-300"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-red-400 dark:bg-red-400"></div>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-yellow-400 dark:bg-yellow-400"></div>
                   <div className="w-2.5 h-2.5 rounded-sm bg-green-400 dark:bg-green-400"></div>
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-500 dark:bg-green-500"></div>
                   <div className="w-2.5 h-2.5 rounded-sm bg-green-600 dark:bg-green-600"></div>
                 </div>
-                <span>More</span>
+                <span>Present</span>
               </div>
             </div>
             

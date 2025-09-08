@@ -9,3 +9,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <RouterProvider router={router} />
   </React.StrictMode>
 )
+
+// Register service worker (custom lightweight) if production build
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const swUrl = './sw.js';
+    navigator.serviceWorker.register(swUrl).catch(err => {
+      console.warn('[sw] registration failed', err);
+    });
+  });
+}
